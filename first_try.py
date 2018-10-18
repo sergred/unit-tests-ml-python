@@ -3,6 +3,7 @@
 
 from sklearn.model_selection import StratifiedShuffleSplit, train_test_split
 from sklearn.metrics import accuracy_score
+from tabulate import tabulate
 import pandas as pd
 import numpy as np
 import os
@@ -13,6 +14,25 @@ from error_generation import MissingValues, Anomalies
 from settings import get_resource_path
 
 np.random.seed(0)
+
+class Table:
+    def __init__(self, rows, columns, subcolumns):
+        self.rows_len, self.cols_len, self.subcols_len = len(rows), len(columns), len(subcolumns)
+        self.table = np.zeros((2*self.rows_len+2, self.cols_len*self.subcols_len+1), dtype=object)
+        self.table[0, :] = np.array([""] + [list(columns)[i//self.subcols_len] for i in range(self.cols_len*self.subcols_len)])
+        self.table[1, :] = np.array([""] + list(subcolumns)*self.cols_len)
+        self.table[:, 0] = np.array(["", ""] + [item for sublist in map(lambda x: [x, ""], sorted(rows)) for item in sublist])
+
+    def update(self, data, i, j, k):
+        if k == -1:
+            z = self.subcols_len*j + 1
+            self.table[2*i + 2, z:z+self.subcols_len] = data
+        else:
+            self.table[2*i + 3, self.subcols_len*j + k + 1] = data
+
+    def save(self, filename):
+        np.savetxt(filename, self.table, delimiter=",", fmt="%s")
+
 
 def main():
     resource_folder = get_resource_path()
@@ -29,14 +49,11 @@ def main():
                    'ertc': ExtremelyRandomizedTrees(size=40),
                    'xgb': XGB()}
 
-    error_gens = {'anomalies': Anomalies(),
+    error_gens = {'numeric anomalies': Anomalies(mode='numeric'),
+                  'string anomalies': Anomalies(mode='object'),
                   'missing values': MissingValues()}
 
-    results = np.zeros((2*len(pipelines)+2, len(error_gens)*len(classifiers)+1), dtype=object)
-    data_names = sorted(pipelines.keys())
-    results[0, :] = np.array([""] + [list(classifiers)[i//len(error_gens)]for i in range(len(error_gens)*len(classifiers))])
-    results[1, :] = np.array([""] + list(error_gens)*len(classifiers))
-    results[:, 0] = np.array(["", ""] + [item for sublist in map(lambda x: [x, ""], data_names) for item in sublist])
+    results = Table(rows=pipelines.keys(), columns=classifiers.keys(), subcolumns=error_gens.keys())
 
     for pipe_idx, pipe in enumerate(sorted(pipelines.items())):
         name, content = pipe
@@ -61,18 +78,23 @@ def main():
 
             model = pipeline.with_estimator(classifier).fit(X_train, y_train)
             prediction = model.predict(X_test)
+            base_score = accuracy_score(y_test, prediction)
+            results.update(base_score, pipe_idx, classifier_idx, -1)
 
-            i = len(error_gens)*classifier_idx + 1
-            results[2*pipe_idx + 2, i:i+len(error_gens)] = accuracy_score(y_test, prediction)
+            for err_gen_idx, err_gen in enumerate(error_gens.values()):
+                try:
+                    corrupted_X_train = err_gen.on(X_train)
+                    model = pipeline.with_estimator(classifier).fit(corrupted_X_train, y_train)
+                    prediction = model.predict(X_test)
+                    res = "%.4f" % round(accuracy_score(y_test, prediction) - base_score, 4)
+                except Exception as e:
+                    print("%s: %s" % (err_gen.__class__, e))
+                    res = 'Fail'
 
-            for err_gen_idx, err_gen in enumerate(error_gens):
+                results.update(res, pipe_idx, classifier_idx, err_gen_idx)
 
-                model = pipeline.with_estimator(classifier).fit(X_train, y_train)
-                prediction = model.predict(X_test)
-
-                results[2*pipe_idx + 3, len(error_gens)*classifier_idx + err_gen_idx + 1] = accuracy_score(y_test, prediction)
-
-    np.savetxt(os.path.join(resource_folder, "results/matrix.csv"), results, delimiter=",", fmt="%s")
+    print(tabulate(results.table, tablefmt='psql'))
+    results.save(os.path.join(resource_folder, "results/matrix.csv"))
 
 
 if __name__ == "__main__":
