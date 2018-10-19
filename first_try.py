@@ -16,19 +16,26 @@ from settings import get_resource_path
 np.random.seed(0)
 
 class Table:
-    def __init__(self, rows, columns, subcolumns):
-        self.rows_len, self.cols_len, self.subcols_len = len(rows), len(columns), len(subcolumns)
-        self.table = np.zeros((2*self.rows_len+2, self.cols_len*self.subcols_len+1), dtype=object)
-        self.table[0, :] = np.array([""] + [list(columns)[i//self.subcols_len] for i in range(self.cols_len*self.subcols_len)])
-        self.table[1, :] = np.array([""] + list(subcolumns)*self.cols_len)
-        self.table[:, 0] = np.array(["", ""] + [item for sublist in map(lambda x: [x, ""], sorted(rows)) for item in sublist])
+    def __init__(self, rows, columns, subrows, subcolumns):
+        self.row_header_len, self.col_header_len = 2, 2
+        self.rows_len, self.cols_len = len(rows), len(columns)
+        self.subrows_len, self.subcols_len = len(subrows) + 1, len(subcolumns)
+        self.dataset_baseline_title = 'baseline'
+        self.table = np.zeros((self.rows_len*self.subrows_len+self.row_header_len, self.cols_len*self.subcols_len+self.col_header_len), dtype=object)
+        self.table[:self.col_header_len, :self.row_header_len] = np.array([['', 'classifiers'], ['datasets', 'tests\\anomalies']])
+        self.table[0, self.row_header_len:] = np.array([list(columns)[i//self.subcols_len] for i in range(self.cols_len*self.subcols_len)])
+        self.table[1, self.row_header_len:] = np.array(list(subcolumns)*self.cols_len)
+        self.table[self.col_header_len:, 0] = np.array([list(rows)[i//self.subrows_len] if i%self.subrows_len == 0 else '' for i in range(self.rows_len*self.subrows_len)])
+        self.table[self.col_header_len:, 1] = np.array(([self.dataset_baseline_title] + list(subrows))*self.rows_len)
 
-    def update(self, data, i, j, k):
-        if k == -1:
-            z = self.subcols_len*j + 1
-            self.table[2*i + 2, z:z+self.subcols_len] = data
+    def update(self, data, i, j, k=-1, l=-1):
+        if k == -1 and l == -1:
+            z = self.row_header_len + self.subcols_len*j
+            self.table[self.col_header_len + self.subrows_len*i, z:z+self.subcols_len] = data
+        elif k != -1 and l != -1:
+            self.table[self.col_header_len + self.subrows_len*i + k + 1, self.row_header_len + self.subcols_len*j + l] = data
         else:
-            self.table[2*i + 3, self.subcols_len*j + k + 1] = data
+            raise Exception('wrong subs')
 
     def save(self, filename):
         np.savetxt(filename, self.table, delimiter=",", fmt="%s")
@@ -53,7 +60,9 @@ def main():
                   'string anomalies': Anomalies(mode='object'),
                   'missing values': MissingValues()}
 
-    results = Table(rows=pipelines.keys(), columns=classifiers.keys(), subcolumns=error_gens.keys())
+    tests = {'core': "mock"}
+
+    results = Table(rows=pipelines.keys(), columns=classifiers.keys(), subrows=tests.keys(), subcolumns=error_gens.keys())
 
     for pipe_idx, pipe in enumerate(sorted(pipelines.items())):
         name, content = pipe
@@ -79,7 +88,7 @@ def main():
             model = pipeline.with_estimator(classifier).fit(X_train, y_train)
             prediction = model.predict(X_test)
             base_score = accuracy_score(y_test, prediction)
-            results.update(base_score, pipe_idx, classifier_idx, -1)
+            results.update(base_score, pipe_idx, classifier_idx)
 
             for err_gen_idx, err_gen in enumerate(error_gens.values()):
                 try:
@@ -91,7 +100,7 @@ def main():
                     print("%s: %s" % (err_gen.__class__, e))
                     res = 'Fail'
 
-                results.update(res, pipe_idx, classifier_idx, err_gen_idx)
+                results.update(res, pipe_idx, classifier_idx, 0, err_gen_idx)
 
     print(tabulate(results.table, tablefmt='psql'))
     results.save(os.path.join(resource_folder, "results/matrix.csv"))
