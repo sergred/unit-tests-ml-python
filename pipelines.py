@@ -3,7 +3,7 @@
 
 """"""
 
-from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler, Imputer
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
@@ -141,6 +141,25 @@ class WineQualityPipeline(BasePipeline):
         """
         self.pipe = Pipeline([('scaler', StandardScaler())])
 
+
+class WineQualityMissingPipeline(BasePipeline):
+    def __init__(self):
+        """
+        fixed_acidity           1599 non-null float64
+        volatile_acidity        1599 non-null float64
+        citric_acid             1599 non-null float64
+        residual_sugar          1599 non-null float64
+        chlorides               1599 non-null float64
+        free_sulfur_dioxide     1599 non-null float64
+        total_sulfur_dioxide    1599 non-null float64
+        density                 1599 non-null float64
+        pH                      1599 non-null float64
+        sulphates               1599 non-null float64
+        alcohol                 1599 non-null float64
+        class                   1599 non-null int64
+        """
+        self.pipe = Pipeline([('scaler', StandardScaler()),
+                              ('imputer', Imputer(missing_values=0, strategy="mean", axis=0))])
 
 def main():
     """

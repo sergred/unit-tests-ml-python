@@ -9,7 +9,7 @@ import numpy as np
 import os
 
 from models import DecisionTree, RandomForest, ExtremelyRandomizedTrees, XGB
-from pipelines import AbalonePipeline, CreditGPipeline, WineQualityPipeline
+from pipelines import AbalonePipeline, CreditGPipeline, WineQualityPipeline, WineQualityMissingPipeline
 from error_generation import MissingValues, Anomalies
 from settings import get_resource_path
 
@@ -40,6 +40,11 @@ class Table:
     def save(self, filename):
         np.savetxt(filename, self.table, delimiter=",", fmt="%s")
 
+    def show(self):
+        res = tabulate(self.table, tablefmt='psql')
+        print(res)
+        return res
+
 
 def main():
     resource_folder = get_resource_path()
@@ -48,7 +53,8 @@ def main():
     #         print(dataset_name[:-4])
 
     pipelines = {'credit-g': ('dataset_31_credit-g.csv', 'class', CreditGPipeline()),
-                 'wine-quality': ('wine-quality-red.csv', 'class', WineQualityPipeline())}
+                 'wine-quality': ('wine-quality-red.csv', 'class', WineQualityPipeline()),
+                 'wq-missing': ('wine-quality-red.csv', 'class', WineQualityMissingPipeline())}
     #            'abalone': ('abalone.csv', 'Rings', AbalonePipeline),
 
     classifiers = {'dtc': DecisionTree(),
@@ -102,7 +108,7 @@ def main():
 
                 results.update(res, pipe_idx, classifier_idx, 0, err_gen_idx)
 
-    print(tabulate(results.table, tablefmt='psql'))
+    results.show()
     results.save(os.path.join(resource_folder, "results/matrix.csv"))
 
 
