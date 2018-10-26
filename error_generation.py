@@ -46,7 +46,22 @@ class Anomalies(ErrorGenerator):
         return data
 
 
-class MissingValues(ErrorGenerator):
+class ExplicitMissingValues(ErrorGenerator):
+    def __init__(self):
+        ErrorGenerator.__init__(self)
+        pass
+
+    def apply(self, function, data, cell_ids):
+        data = deepcopy(data)
+        for col, idx in cell_ids.items():
+            data.iloc[idx, col] = np.vectorize(function)(data.iloc[idx, col]).astype(data.dtypes[col])
+        return data
+
+    def run(self, data, columns=None):
+        return self.apply(lambda x: np.nan, data, RandomSelector().on(data, columns))
+
+
+class ImplicitMissingValues(ErrorGenerator):
     def __init__(self):
         ErrorGenerator.__init__(self)
         pass
@@ -58,7 +73,9 @@ class MissingValues(ErrorGenerator):
         return data
 
     def run(self, data, columns=None):
-        return self.apply(lambda x: np.nan, data, RandomSelector().on(data, columns))
+        tmp = self.apply(lambda x: 9999, data, RandomSelector().on(data, column_type=DataType.INTEGER))
+        return self.apply(lambda x: 'undefined', tmp, RandomSelector().on(data, column_type=DataType.STRING))
+
 
 
 # class ImplicitMissingValues(ErrorGenerator):
