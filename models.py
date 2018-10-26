@@ -5,7 +5,7 @@
 
 from sklearn.preprocessing import StandardScaler
 from visualization_utils import visualize
-from metrics import precision, recall
+# from metrics import precision, recall
 from settings import get_param
 
 import pandas as pd

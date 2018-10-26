@@ -1,8 +1,8 @@
 ,classifiers,dtc,dtc,dtc,rfc,rfc,rfc,ertc,ertc,ertc,xgb,xgb,xgb
-datasets,tests\anomalies,numeric anomalies,string anomalies,missing values,numeric anomalies,string anomalies,missing values,numeric anomalies,string anomalies,missing values,numeric anomalies,string anomalies,missing values
-credit-g,baseline,0.705,0.705,0.705,0.74,0.74,0.74,0.75,0.75,0.75,0.76,0.76,0.76
-,core,Fail,Fail,Fail,Fail,Fail,Fail,Fail,Fail,Fail,Fail,Fail,Fail
+datasets,tests\anomalies,numeric anomalies,typos,missing values,numeric anomalies,typos,missing values,numeric anomalies,typos,missing values,numeric anomalies,typos,missing values
+credit-g,baseline,0.705,0.705,0.705,0.74,0.74,0.74,0.745,0.745,0.745,0.76,0.76,0.76
+,core,-0.0200,Fail,Fail,-0.0300,Fail,Fail,-0.0050,Fail,Fail,0.0050,Fail,Fail
 wine-quality,baseline,0.6875,0.6875,0.6875,0.73125,0.73125,0.73125,0.71875,0.71875,0.71875,0.65625,0.65625,0.65625
-,core,-0.1188,-0.1281,Fail,-0.0844,-0.1062,Fail,-0.0188,-0.0406,Fail,-0.0469,-0.0188,-0.0219
-wq-missing,baseline,0.6875,0.6875,0.6875,0.73125,0.73125,0.73125,0.709375,0.709375,0.709375,0.65625,0.65625,0.65625
-,core,-0.1406,-0.1438,-0.1344,-0.0781,-0.0594,-0.0844,-0.0656,-0.0281,-0.0281,-0.0312,-0.0188,-0.0687
+,core,-0.0750,0.0000,Fail,-0.0344,0.0000,Fail,-0.0156,0.0000,Fail,0.0000,0.0000,-0.0031
+wq-missing,baseline,0.6875,0.6875,0.6875,0.73125,0.73125,0.73125,0.715625,0.715625,0.715625,0.65625,0.65625,0.65625
+,core,-0.0500,0.0000,-0.0625,-0.0156,0.0000,-0.0375,-0.0250,0.0125,0.0063,-0.0031,0.0000,-0.0156

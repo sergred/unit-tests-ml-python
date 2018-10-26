@@ -3,20 +3,21 @@
 
 """"""
 
-from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler, Imputer
+from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
+from sklearn.impute import SimpleImputer
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
-
+from copy import deepcopy
 import numpy as np
-import copy
+
 
 class BasePipeline:
     def __init__(self):
         self.pipe = None
 
     def with_estimator(self, estimator):
-        complete_pipeline = copy.deepcopy(self.pipe)
+        complete_pipeline = deepcopy(self.pipe)
         complete_pipeline.steps.append(['estimator', estimator])
         return complete_pipeline
 
@@ -158,8 +159,9 @@ class WineQualityMissingPipeline(BasePipeline):
         alcohol                 1599 non-null float64
         class                   1599 non-null int64
         """
-        self.pipe = Pipeline([('scaler', StandardScaler()),
-                              ('imputer', Imputer(missing_values=0, strategy="mean", axis=0))])
+        self.pipe = Pipeline([('imputer', SimpleImputer(strategy="mean")),
+                              ('scaler', StandardScaler())])
+
 
 def main():
     """

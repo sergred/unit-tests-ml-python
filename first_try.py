@@ -10,7 +10,7 @@ import os
 
 from models import DecisionTree, RandomForest, ExtremelyRandomizedTrees, XGB
 from pipelines import AbalonePipeline, CreditGPipeline, WineQualityPipeline, WineQualityMissingPipeline
-from error_generation import MissingValues, Anomalies
+from error_generation import MissingValues, Anomalies, Typos
 from settings import get_resource_path
 
 np.random.seed(0)
@@ -62,9 +62,12 @@ def main():
                    'ertc': ExtremelyRandomizedTrees(size=40),
                    'xgb': XGB()}
 
-    error_gens = {'numeric anomalies': Anomalies(mode='numeric'),
-                  'string anomalies': Anomalies(mode='object'),
+    error_gens = {'numeric anomalies': Anomalies(),
+                  'typos': Typos(),
                   'missing values': MissingValues()}
+
+    # 'implicit missing values': ImplicitMissingValues(),
+    # 'explicit missing values': ExplicitMissingValues()}
 
     tests = {'core': "mock"}
 
@@ -74,7 +77,7 @@ def main():
         name, content = pipe
         filename, target, pipeline = content
         data = pd.read_csv(os.path.join(resource_folder, "data", filename))
-        # print(name)
+        print(name)
         # print(data.shape)
         # print(data.info(verbose=True))
 
@@ -97,6 +100,10 @@ def main():
             results.update(base_score, pipe_idx, classifier_idx)
 
             for err_gen_idx, err_gen in enumerate(error_gens.values()):
+                # corrupted_X_train = err_gen.on(X_train)
+                # model = pipeline.with_estimator(classifier).fit(corrupted_X_train, y_train)
+                # prediction = model.predict(X_test)
+                # res = "%.4f" % round(accuracy_score(y_test, prediction) - base_score, 4)
                 try:
                     corrupted_X_train = err_gen.on(X_train)
                     model = pipeline.with_estimator(classifier).fit(corrupted_X_train, y_train)
