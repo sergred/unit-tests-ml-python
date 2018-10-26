@@ -10,7 +10,7 @@ import os
 
 from models import DecisionTree, RandomForest, ExtremelyRandomizedTrees, XGB
 from pipelines import AbalonePipeline, CreditGPipeline, WineQualityPipeline, WineQualityMissingPipeline
-from error_generation import MissingValues, Anomalies, Typos
+from error_generation import ImplicitMissingValues, ExplicitMissingValues, Anomalies, Typos
 from settings import get_resource_path
 
 np.random.seed(0)
@@ -54,8 +54,8 @@ def main():
 
     pipelines = {'credit-g': ('dataset_31_credit-g.csv', 'class', CreditGPipeline()),
                  'wine-quality': ('wine-quality-red.csv', 'class', WineQualityPipeline()),
-                 'wq-missing': ('wine-quality-red.csv', 'class', WineQualityMissingPipeline())}
-    #            'abalone': ('abalone.csv', 'Rings', AbalonePipeline),
+                 'wq-missing': ('wine-quality-red.csv', 'class', WineQualityMissingPipeline()),
+                 'abalone': ('abalone.csv', 'Rings', AbalonePipeline())}
 
     classifiers = {'dtc': DecisionTree(),
                    'rfc': RandomForest(size=40),
@@ -64,14 +64,15 @@ def main():
 
     error_gens = {'numeric anomalies': Anomalies(),
                   'typos': Typos(),
-                  'missing values': MissingValues()}
-
-    # 'implicit missing values': ImplicitMissingValues(),
-    # 'explicit missing values': ExplicitMissingValues()}
+                  'explicit misvals': ExplicitMissingValues(),
+                  'implicit misvals': ImplicitMissingValues()}
 
     tests = {'core': "mock"}
 
-    results = Table(rows=pipelines.keys(), columns=classifiers.keys(), subrows=tests.keys(), subcolumns=error_gens.keys())
+    results = Table(rows=sorted(pipelines.keys()),
+                    columns=sorted(classifiers.keys()),
+                    subrows=tests.keys(),
+                    subcolumns=error_gens.keys())
 
     for pipe_idx, pipe in enumerate(sorted(pipelines.items())):
         name, content = pipe
@@ -83,6 +84,8 @@ def main():
 
         X, y = data[[col for col in data.columns if col != target]], data[target]
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
+
+        # print(X_train.shape)
 
         # ss = StratifiedShuffleSplit(n_splits=1, test_size=0.1, random_state=0)
 
@@ -97,17 +100,19 @@ def main():
             model = pipeline.with_estimator(classifier).fit(X_train, y_train)
             prediction = model.predict(X_test)
             base_score = accuracy_score(y_test, prediction)
-            results.update(base_score, pipe_idx, classifier_idx)
+            results.update("%.4f" % round(base_score, 4), pipe_idx, classifier_idx)
+
+            # print(pipeline.fit_transform(X_train, y_train).shape)
 
             for err_gen_idx, err_gen in enumerate(error_gens.values()):
-                # corrupted_X_train = err_gen.on(X_train)
-                # model = pipeline.with_estimator(classifier).fit(corrupted_X_train, y_train)
-                # prediction = model.predict(X_test)
+                # corrupted_X_test = err_gen.on(X_test)
+                # model = pipeline.with_estimator(classifier).fit(X_train, y_train)
+                # prediction = model.predict(corrupted_X_test)
                 # res = "%.4f" % round(accuracy_score(y_test, prediction) - base_score, 4)
                 try:
-                    corrupted_X_train = err_gen.on(X_train)
-                    model = pipeline.with_estimator(classifier).fit(corrupted_X_train, y_train)
-                    prediction = model.predict(X_test)
+                    corrupted_X_test = err_gen.on(X_test)
+                    model = pipeline.with_estimator(classifier).fit(X_train, y_train)
+                    prediction = model.predict(corrupted_X_test)
                     res = "%.4f" % round(accuracy_score(y_test, prediction) - base_score, 4)
                 except Exception as e:
                     print("%s: %s" % (err_gen.__class__, e))

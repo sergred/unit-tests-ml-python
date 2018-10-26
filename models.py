@@ -10,6 +10,7 @@ from settings import get_param
 
 import pandas as pd
 import numpy as np
+import pickle
 import os
 
 np.random.seed(0)
@@ -21,6 +22,7 @@ class Model:
 
     def fit(self, X_train, y_train):
         """"""
+        self.clf = pickle.loads(self.dump)
         self.clf.fit(X_train, y_train)
 
     def predict(self, X_test):
@@ -60,7 +62,7 @@ class Model:
 class SVM(Model):
     def __init__(self, kernel='poly'):
         from sklearn import svm
-        self.clf = svm.SVC(kernel=kernel, decision_function_shape='ovr')
+        self.dump = pickle.dumps(svm.SVC(kernel=kernel, decision_function_shape='ovr'))
         self.name = "svm"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -68,7 +70,7 @@ class SVM(Model):
 class LinearSVM(Model):
     def __init__(self):
         from sklearn import svm
-        self.clf = svm.LinearSVC()
+        self.dump = pickle.dumps(svm.LinearSVC())
         self.name = "lsvm"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -77,7 +79,7 @@ class KNN(Model):
     def __init__(self, n_neighbors):
         from sklearn.neighbors import KNeighborsClassifier
         """KNN with distance-based weight points"""
-        self.clf = KNeighborsClassifier(n_neighbors, weights='distance')
+        self.dump = pickle.dumps(KNeighborsClassifier(n_neighbors, weights='distance'))
         self.name = "knn"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -85,7 +87,7 @@ class KNN(Model):
 class LogRegression(Model):
     def __init__(self):
         from sklearn.linear_model import LogisticRegression
-        self.clf = LogisticRegression()
+        self.dump = pickle.dumps(LogisticRegression())
         self.name = "logreg"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -93,7 +95,7 @@ class LogRegression(Model):
 class GausNB(Model):
     def __init__(self):
         from sklearn.naive_bayes import GaussianNB
-        self.clf = GaussianNB()
+        self.dump = pickle.dumps(GaussianNB())
         self.name = "gpc"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -101,7 +103,7 @@ class GausNB(Model):
 class DecisionTree(Model):
     def __init__(self):
         from sklearn.tree import DecisionTreeClassifier
-        self.clf = DecisionTreeClassifier(max_depth=None, min_samples_split=2, random_state=0)
+        self.dump = pickle.dumps(DecisionTreeClassifier(max_depth=None, min_samples_split=2, random_state=0))
         self.name = "dtree"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -109,7 +111,7 @@ class DecisionTree(Model):
 class RandomForest(Model):
     def __init__(self, size=40):
         from sklearn.ensemble import RandomForestClassifier
-        self.clf = RandomForestClassifier(n_estimators=size)
+        self.dump = pickle.dumps(RandomForestClassifier(n_estimators=size))
         self.name = "rfc"
         self.save_path = "models/%s_%d.pkl" % (self.name, size)
 
@@ -117,7 +119,7 @@ class RandomForest(Model):
 class ExtremelyRandomizedTrees(Model):
     def __init__(self, size):
         from sklearn.ensemble import ExtraTreesClassifier
-        self.clf = ExtraTreesClassifier(n_estimators=size, max_depth=None, min_samples_split=2, random_state=0)
+        self.dump = pickle.dumps(ExtraTreesClassifier(n_estimators=size, max_depth=None, min_samples_split=2, random_state=0))
         self.name = "ertc"
         self.save_path = "models/%s_%d.pkl" % (self.name, size)
 
@@ -126,7 +128,7 @@ class BaggingRandomForest(Model):
     def __init__(self, size):
         from sklearn.ensemble import RandomForestClassifier
         from sklearn.ensemble import BaggingClassifier
-        self.clf = BaggingClassifier(RandomForestClassifier(n_estimators=size), max_samples=0.5, max_features=0.5)
+        self.dump = pickle.dumps(BaggingClassifier(RandomForestClassifier(n_estimators=size), max_samples=0.5, max_features=0.5))
         self.name = "brfc"
         self.save_path = "models/%s_%d.pkl" % (self.name, size)
 
@@ -135,17 +137,17 @@ class MLPC(Model):
     def __init__(self, input_size):
         from sklearn.neural_network import MLPClassifier
         self.input_size = input_size
-        self.clf = MLPClassifier(   solver='adam', alpha=1e-4,
-                                    learning_rate_init=1e-5,
-                                    hidden_layer_sizes=size, random_state=1)
+        self.dump = pickle.dumps(MLPClassifier(solver='adam', alpha=1e-4,
+                                              learning_rate_init=1e-5,
+                                              hidden_layer_sizes=input_size, random_state=1))
         self.name = "mlpc"
-        self.save_path = "models/%s_%s.pkl" % (self.name, "_".join([str(i) for i in size]))
+        self.save_path = "models/%s_%s.pkl" % (self.name, "_".join([str(i) for i in input_size]))
 
 
 class XGB(Model):
     def __init__(self):
         from xgboost import XGBClassifier
-        self.clf = XGBClassifier()
+        self.dump = pickle.dumps(XGBClassifier(objctive='multi:softmax'))
         self.name = "xgb"
         self.save_path = "models/%s.pkl" % (self.name, )
 

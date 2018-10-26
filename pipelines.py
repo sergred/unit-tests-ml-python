@@ -16,6 +16,9 @@ class BasePipeline:
     def __init__(self):
         self.pipe = None
 
+    def __getattr__(self, name):
+        return getattr(self.pipe, name)
+
     def with_estimator(self, estimator):
         complete_pipeline = deepcopy(self.pipe)
         complete_pipeline.steps.append(['estimator', estimator])
@@ -160,6 +163,18 @@ class WineQualityMissingPipeline(BasePipeline):
         class                   1599 non-null int64
         """
         self.pipe = Pipeline([('imputer', SimpleImputer(strategy="mean")),
+                              ('scaler', StandardScaler())])
+
+
+class AbalonePipeline(BasePipeline):
+    def __init__(self):
+        """
+
+        """
+        column_transformers = ColumnTransformer(
+            [("Sex_idx", OneHotEncodingTransformer(['M', 'F', 'I']), "Sex")],
+            remainder='passthrough')
+        self.pipe = Pipeline([('column transformers', column_transformers),
                               ('scaler', StandardScaler())])
 
 
