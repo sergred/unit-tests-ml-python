@@ -27,9 +27,12 @@ class RandomSelector(Selector):
             if columns is None:
                 if column_type is None:
                     # random 'corrupting'
-                    columns = np.random.choice(range(cols), int(np.ceil(self.column_fraction*cols)), replace=False)
+                    columns = np.random.choice(range(cols),
+                                               int(np.ceil(self.column_fraction*cols)), replace=False)
                 else:
                     columns = DataFrameAnalyzer(data).get_column_idx(column_type)
+            else:
+                columns = [list(data.columns).index(col) for col in columns]
             row_ids = np.random.choice(range(rows), int(np.ceil(self.row_fraction*rows)), replace=False)
             return dict([(col, row_ids) for col in columns])
 

@@ -49,10 +49,10 @@ class DataFrameAnalyzer(Analyzer):
         Analyzer.__init__(self)
         self.data = data
         self.stats = None
-        stat_items = ['count', 'unique', 'top', 'freq', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']
+        stat_items = ['count', 'unique', 'top', 'freq', 'mean', 'std',
+                      'min', '25%', '50%', '75%', 'max']
         self.stat_items = dict(zip(stat_items, range(len(stat_items))))
         self.run(self.data)
-        pass
 
     def on(self, dataframe):
         return self.run(dataframe)
