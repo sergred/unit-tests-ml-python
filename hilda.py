@@ -9,69 +9,17 @@ from sklearn.metrics import accuracy_score
 import pandas as pd
 import numpy as np
 
-from pipelines import CreditGPipeline
+from pipelines import CreditGPipeline, WineQualityMissingPipeline
+from profilers import DataFrameProfiler, SklearnPipelineProfiler
+from test_suite import AutomatedTestSuite, TestSuite, Test
 from error_generation import ExplicitMissingValues
 from models import RandomForest
-
-class Check:
-    def __init__(self, assumption, message):
-        self.assumption = assumption
-        self.message = message
-
-
-class Test:
-    def __init__(self):
-        self.checks = []
-
-    def __iter__(self):
-        return iter(self.checks)
-
-    def _add(self, assumption, message):
-        self.checks.append(Check(assumption, message))
-        return self
-
-    def has_size(self, size):
-        return self._add(lambda x: x.shape[0] == size,
-                         "DataFrame does not have %d rows" % size)
-
-    def is_complete(self, column):
-        return self._add(lambda x: x[column].notna().all(),
-                         "Column %s is not complete" % column)
-
-    def is_unique(self, column):
-        return self._add(lambda x: np.unique(x[column]).shape[0] == x.shape[0],
-                         "Values in column %s not not unique" % column)
-
-
-class TestSuite:
-    def __init__(self, data_profile=None, pipeline_profile=None):
-        self.data = None
-        self.tests = []
-        self.data_profile = data_profile
-        self.pipeline_profile = pipeline_profile
-
-    def on(self, data):
-        self.data = data
-        return self
-
-    def add(self, test):
-        self.tests.append(test)
-        return self
-
-    def run(self):
-        assert self.data is not None, "Call TestSuite on(data) method first."
-        messages = []
-        for test in self.tests:
-            for check in test:
-                if not check.assumption(self.data):
-                    messages.append(check.message)
-        return messages
-
 
 def main():
     """
     """
-    data = pd.read_csv('resources/data/dataset_31_credit-g.csv')
+    # data = pd.read_csv('resources/data/dataset_31_credit-g.csv')
+    data = pd.read_csv('resources/data/wine-quality-red.csv')
     print(data.shape)
     print(data.columns)
 
@@ -81,38 +29,47 @@ def main():
                                              test_size=0.2,
                                              random_state=0)
 
-    pipeline = CreditGPipeline()
+    # pipeline = CreditGPipeline()
+    pipeline = WineQualityMissingPipeline()
     classifier = RandomForest(size=40)
     model = pipeline.with_estimator(classifier).fit(X_train, y_train)
 
     prediction = model.predict(X_test)
     print(accuracy_score(y_test, prediction))
 
-    # data_profile = profile(X_train)
-    # pipeline_profile = inspect(model)
-    data_profile = None
-    pipeline_profile = None
-    suite = TestSuite(pipeline_profile, data_profile)
+    suite = TestSuite()
 
     suite.add(Test()
-              .is_complete('checking_status'))
+              .is_complete('volatile_acidity'))
 
     warnings = suite.on(X_test).run()
 
-    if warnings:
+    if warnings and (len(warnings) != 0):
         print("======= WARNINGS =======")
-    for warn in warnings:
-        print(warn)
+        for warn in warnings:
+            print(warn)
 
     error_generator = ExplicitMissingValues()
-    corrupted_X_test = error_generator.run(X_test, ['checking_status'])
+    corrupted_X_test = error_generator.run(X_test, ['volatile_acidity'])
 
     warnings = suite.on(corrupted_X_test).run()
 
-    if warnings:
+    if warnings and (len(warnings) != 0):
         print("======= WARNINGS =======")
-    for warn in warnings:
-        print(warn)
+        for warn in warnings:
+            print(warn)
+
+    print()
+
+    data_profile = DataFrameProfiler().on(X_train)
+    pipeline_profile = SklearnPipelineProfiler().on(model)
+    automated_suite = AutomatedTestSuite(data_profile, pipeline_profile)
+    tests, warnings = automated_suite.run()
+
+    if warnings and (len(warnings) != 0):
+        print("======= WARNINGS =======")
+        for warn in warnings:
+            print(warn)
 
 
 

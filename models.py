@@ -18,7 +18,14 @@ np.random.seed(0)
 class Model:
     def __init__(self):
         self.clf = None
+        self.dump = None
         self.name = ""
+
+    def __str__(self):
+        return str(pickle.loads(self.dump))
+
+    def __repr__(self):
+        return str(pickle.loads(self.dump))
 
     def fit(self, X_train, y_train):
         """"""
