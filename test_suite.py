@@ -3,7 +3,10 @@
 
 """"""
 
+import numpy as np
+
 from profilers import Warning, ErrorType
+
 
 class Check:
     def __init__(self, assumption, error_type, message):

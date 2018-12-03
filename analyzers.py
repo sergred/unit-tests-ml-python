@@ -8,9 +8,10 @@ from enum import Enum
 import pandas as pd
 import numpy as np
 
+
 class DataScale(Enum):
     UNDEFINED = 0
-    NOMINAL = 1 # categorical
+    NOMINAL = 1  # categorical
     ORDINAL = 2
     INTERVAL = 3
     RATIO = 4
@@ -53,18 +54,17 @@ class DataFrameAnalyzer(Analyzer):
         self.all_stat_items = ['count']
         self.obj_stat_items = ['unique', 'top', 'freq']
         self.date_stat_items = ['first', 'last']
-        self.num_stat_items = ['mean', 'std', 'min', '25%', '50%', '75%', 'max']
+        self.num_stat_items = ['mean', 'std',
+                               'min', '25%', '50%', '75%', 'max']
         self.stat_items_strategy = dict({
             1: self.all_stat_items,
             3: self.all_stat_items + self.date_stat_items,
             4: self.all_stat_items + self.obj_stat_items,
             6: self.all_stat_items + self.obj_stat_items + self.date_stat_items,
             8: self.all_stat_items + self.num_stat_items,
-            10: self.all_stat_items + self.date_stat_items
-                + self.num_stat_items,
+            10: self.all_stat_items + self.date_stat_items + self.num_stat_items,
             11: self.all_stat_items + self.obj_stat_items + self.num_stat_items,
-            13: self.all_stat_items + self.obj_stat_items
-                + self.date_stat_items + self.num_stat_items
+            13: self.all_stat_items + self.obj_stat_items + self.date_stat_items + self.num_stat_items
         })
         self.compute = dict({
             'count': lambda x: np.array([x.shape[0]]*x.shape[1]),
@@ -86,7 +86,8 @@ class DataFrameAnalyzer(Analyzer):
         return self.run(dataframe)
 
     def _get_histogram(self, dataframe, column_idx=None):
-        if column_idx is None: column_idx = range(dataframe.shape[1])
+        if column_idx is None:
+            column_idx = range(dataframe.shape[1])
         column_idx = np.array(column_idx)
         stats = self._get_stats(column_idx, ['unique', 'min', 'max'])
         histograms = []
@@ -102,7 +103,8 @@ class DataFrameAnalyzer(Analyzer):
                     bins = np.linspace(stats[1, idx], stats[2, idx],
                                        self.discrete_threshold)
                     # bins = np.arange(stats[1, idx], stats[2, idx], step)
-                    digitized = np.digitize(dataframe.iloc[:, idx].astype(np.float64).values, bins)
+                    digitized = np.digitize(
+                        dataframe.iloc[:, idx].astype(np.float64).values, bins)
                     bin_height = [np.sum(digitized == i)
                                   for i in range(1, len(bins))]
                     tmp = list(zip(bins[:-1], bins[1:], bin_height))
@@ -145,8 +147,8 @@ class DataFrameAnalyzer(Analyzer):
             if not columns and not column_stats:
                 dtype = DataType.FLOAT
             elif columns is not None and column_stats is not None:
-                if  column_stats.min.is_integer() and column_stats.max.is_integer():
-                    if map(lambda x: x.is_integer(), column).all():
+                if column_stats.min.is_integer() and column_stats.max.is_integer():
+                    if map(lambda x: x.is_integer(), columns).all():
                         dtype = DataType.INTEGER
                     else:
                         dtype = DataType.FLOAT
@@ -164,10 +166,12 @@ class DataFrameAnalyzer(Analyzer):
         stat_items = self.stat_items_strategy[self.stats.shape[0]]
         self.stat_items = dict(zip(stat_items, range(len(stat_items))))
         self.columns = dataframe.columns if not columns else columns
-        self.dtypes = np.array([self._get_column_type(col) for col in dataframe.dtypes])
+        self.dtypes = np.array([self._get_column_type(col)
+                                for col in dataframe.dtypes])
         for idx, type in enumerate(self.dtypes):
             if type is DataType.INTEGER:
-                self.stats.iloc[self.stat_items['unique'], idx] = np.unique(dataframe.iloc[:, idx]).shape[0]
+                self.stats.iloc[self.stat_items['unique'], idx] = np.unique(
+                    dataframe.iloc[:, idx]).shape[0]
         # for col in self.columns: column_stats = self.stats.loc[:, col]
         self.histograms = self._get_histogram(dataframe)
         return self

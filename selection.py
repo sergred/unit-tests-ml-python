@@ -15,7 +15,7 @@ class Selector:
 class RandomSelector(Selector):
     class __RandomSelector:
         def __init__(self, column_fraction=.2, row_fraction=.1):
-            Selector.__init__(self)
+            # Selector.__init__(self)
             self.column_fraction = column_fraction
             self.row_fraction = row_fraction
 
