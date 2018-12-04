@@ -3,18 +3,19 @@
 
 """"""
 
-from sklearn.compose import ColumnTransformer
+# from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline as p
 from collections import defaultdict
 from enum import Enum
 import pandas as pd
 import numpy as np
-import inspect
 import pickle
 
-from analyzers import DataFrameAnalyzer
+from analyzers import DataFrameAnalyzer, DataScale
+
 
 class ErrorType(Enum):
+    UNAVAILABLE = -1
     UNDEFINED = 0
     MISSING_VALUE = 1
     ANOMALY = 2
@@ -22,26 +23,40 @@ class ErrorType(Enum):
     INCOMPLETE = 4
     DUPLICATE = 5
     INTEGRITY = 6
+    NOT_IN_RANGE = 7
+
+
+class Severity(Enum):
+    UNDEFINED = 0
+    INFO = 1
+    CRITICAL = 2
 
 
 class Warning:
-    def __init__(self, error_type, message):
+    def __init__(self, error_type, severity, message):
         self.error_type = error_type
         self.message = message
+        self.severity = severity
 
     def __repr__(self):
-        return self.message
+        return "{:10}: {:s}".format(self.severity.name, self.message.strip())
+
+    def __str__(self):
+        return self.__repr__()
 
 
 class ColumnProfile:
     def __init__(self, column_name,
-                 dtype, num_missing,
+                 dtype, scale, num_missing,
                  num_unique, histogram):
         self.column_name = column_name
         self.dtype = dtype
+        self.scale = scale
         self.num_missing = num_missing
         self.num_unique = num_unique
         self.histogram = histogram
+        if scale == DataScale.NOMINAL:
+            self.range = self.histogram.keys()
 
     def str(self):
         return self.__repr__()
@@ -53,7 +68,7 @@ class ColumnProfile:
         missing   : %d
         unique    : %d
         histogram : %s
-        """ % (self.column_name, self.dtype, self.num_missing,
+        """ % (self.column_name, self.dtype.name, self.num_missing,
                self.num_unique, self.histogram)
 
 
@@ -81,8 +96,9 @@ class DataFrameProfiler(Profiler):
         for i, col in enumerate(data.columns):
             stats = self.analyzer.stats.iloc[:, i].values
             profile = ColumnProfile(col, self.analyzer.dtypes[i],
-                                   np.sum(pd.isnull(data.iloc[i])),
-                                   int(stats[1]), self.analyzer.histograms[i])
+                                    DataScale.UNDEFINED,
+                                    np.sum(pd.isnull(data.iloc[i])),
+                                    int(stats[1]), self.analyzer.histograms[i])
             self.profiles.append(profile)
         return self.profiles
 
