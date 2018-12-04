@@ -36,17 +36,6 @@ from feature_statistics_generator import ProtoFromTfRecordFiles
 
 np.random.seed = 1
 
-# parser = argparse.ArgumentParser()
-# parser.add_argument('--dataset_path',
-#                     help='path to directory containing your '
-#                     'TFRecord-encoded dataset.')
-# parser.add_argument('--stats_path',
-#                     help='path where stats are stored.')
-# parser.add_argument('--results_path',
-#                     help='where DataLinter results are stored.',
-#                     default='/tmp/datalinter/results/lint_results.bin')
-# args = parser.parse_args()
-
 # Some linters are currently disabled due to a bug.
 DEFAULT_STATS_LINTERS = [  # These linters require dataset statistics.
     linters.CircularDomainDetector,
@@ -83,7 +72,8 @@ def _make_dataset_reader(dataset_path, example_coder):
     A `LabeledPTransform` that yields a `PCollection` of the
     `tf.Example`s in the dataset.
     """
-    reader = beam.io.tfrecordio.ReadFromTFRecord(dataset_path, coder=example_coder)
+    reader = beam.io.tfrecordio.ReadFromTFRecord(dataset_path,
+                                                 coder=example_coder)
     return 'ReadExamples' >> reader
 
 

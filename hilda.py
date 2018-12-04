@@ -4,22 +4,22 @@
 """"""
 
 from sklearn.model_selection import train_test_split as split
-from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score
 import pandas as pd
-import numpy as np
 
-from pipelines import CreditGPipeline, WineQualityMissingPipeline
+from pipelines import WineQualityMissingPipeline
+# from pipelines import CreditGPipeline
 from profilers import DataFrameProfiler, SklearnPipelineProfiler
 from test_suite import AutomatedTestSuite, TestSuite, Test
 from error_generation import ExplicitMissingValues
 from models import RandomForest
 
+
 def main():
     """
     """
     # data = pd.read_csv('resources/data/dataset_31_credit-g.csv')
-    data = pd.read_csv('resources/data/wine-quality-red.csv')
+    data = pd.read_csv('resources/data/wine-quality/wine-quality-red.csv')
     print(data.shape)
     print(data.columns)
 
@@ -63,14 +63,13 @@ def main():
 
     data_profile = DataFrameProfiler().on(X_train)
     pipeline_profile = SklearnPipelineProfiler().on(model)
-    automated_suite = AutomatedTestSuite(data_profile, pipeline_profile)
-    tests, warnings = automated_suite.run()
+    automated_suite = AutomatedTestSuite()
+    tests, warnings = automated_suite.run(data_profile, pipeline_profile)
 
     if warnings and (len(warnings) != 0):
         print("======= WARNINGS =======")
         for warn in warnings:
             print(warn)
-
 
 
 if __name__ == "__main__":

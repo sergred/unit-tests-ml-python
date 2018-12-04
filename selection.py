@@ -28,7 +28,9 @@ class RandomSelector(Selector):
                 if column_type is None:
                     # random 'corrupting'
                     columns = np.random.choice(range(cols),
-                                               int(np.ceil(self.column_fraction*cols)), replace=False)
+                                               int(np.ceil(
+                                                   self.column_fraction*cols)),
+                                               replace=False)
                 else:
                     columns = DataFrameAnalyzer(data).get_column_idx(column_type)
             else:
