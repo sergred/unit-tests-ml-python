@@ -1,0 +1,287 @@
+<!--
+@license
+Copyright 2017 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<link rel="import" href="../../../polymer/polymer.html">
+<link rel="import" href="../../../paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../../../paper-dialog/paper-dialog.html">
+<link rel="import" href="../../../paper-dropdown-menu/paper-dropdown-menu.html">
+<link rel="import" href="../../../paper-input/paper-input.html">
+<link rel="import" href="../../../paper-item/paper-item.html">
+<link rel="import" href="../../../paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../../../paper-listbox/paper-listbox.html">
+<link rel="import" href="../facets-dive-vis/facets-dive-vis.html">
+
+<dom-module id="facets-dive-controls">
+  <template>
+    <style>
+      :host {
+        @apply --paper-font-common-base;
+        display: flex;
+        overflow: visible;
+      }
+
+      .main-controls {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 60px;
+        display: flex;
+        height: 100%;
+        overflow: visible;
+      }
+
+      .overflow-holder {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 60px;
+        right: 0;
+        overflow: visible;
+      }
+
+      #overflowmenu {
+        margin: 0 40px;
+      }
+
+      .overflow-div {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .overflow-checkbox {
+        margin: 8px 0;
+        padding
+      }
+
+      .dropdown-holder {
+        display: flex;
+        width: 150px;
+        margin: 0 10px;
+      }
+
+      .dropdown-trigger {
+        margin-top: 10px;
+      }
+
+      .expand-button {
+        color: #9b9b9b;
+        --paper-icon-button-ink-color: #9b9b9b;
+      }
+      paper-menu paper-checkbox {
+        display: block;
+        font-weight: normal;
+        font-size: 12.5px;
+        text-align: center;
+      }
+
+      paper-item {
+        padding: 0 14px;
+        --paper-item-min-height: 36px;
+      }
+      paper-dropdown-menu paper-item {
+        border-bottom: 1px solid #ccc;
+      }
+
+      #verticalFacet {
+        --paper-input-container-input: {
+          color: var(--grid-faceting-vertical-label-color);
+        };
+      }
+      #horizontalFacet {
+        --paper-input-container-input: {
+          color: var(--grid-faceting-horizontal-label-color);
+        };
+      }
+      #verticalPosition {
+        --paper-input-container-input: {
+          color: var(--item-positioning-vertical-label-color);
+        };
+      }
+      #horizontalPosition {
+        --paper-input-container-input: {
+          color: var(--item-positioning-horizontal-label-color);
+        };
+      }
+      .vertical-facet {
+        color: var(--grid-faceting-vertical-label-color);
+      }
+      .horizontal-facet {
+        color: var(--grid-faceting-horizontal-label-color);
+      }
+      .vertical-position {
+        color: var(--item-positioning-vertical-label-color);
+      }
+      .horizontal-position {
+        color: var(--item-positioning-horizontal-label-color);
+      }
+    </style>
+
+    <div class="main-controls">
+        <div class="dropdown-holder horizontal-facet">
+            <paper-dropdown-menu
+                  id="horizontalFacet"
+                  label="Binning | X-Axis"
+                  class="facet-selector">
+              <paper-listbox class="dropdown-content" selected="{{horizontalFacet}}"
+                  attr-for-selected="value" slot="dropdown-content">
+                <paper-item value="">(none)</paper-item>
+                <template is="dom-repeat" items="[[keys]]">
+                  <paper-item value="[[item]]">[[_breakUpAndTruncate(item)]]</paper-item>
+                </template>
+              </paper-listbox>
+            </paper-dropdown-menu>
+          </div>
+
+          <template is="dom-if" if="[[horizontalFacet]]">
+          <paper-input type="number" min="1"
+                  max="[[_maxBuckets(horizontalFacet, horizontalBagOfWords)]]"
+                  value="{{horizontalBuckets}}"
+                  label="Count">
+            </paper-input>
+          </template>
+
+      <div class="dropdown-holder vertical-facet">
+        <paper-dropdown-menu
+              id="verticalFacet"
+              label="Binning | Y-Axis"
+              class="facet-selector">
+          <paper-listbox class="dropdown-content" selected="{{verticalFacet}}"
+              attr-for-selected="value" slot="dropdown-content">
+            <paper-item value="">(none)</paper-item>
+            <template is="dom-repeat" items="[[keys]]">
+              <paper-item value="[[item]]">[[_breakUpAndTruncate(item)]]</paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+      </div>
+
+      <template is="dom-if" if="[[verticalFacet]]">
+        <paper-input type="number" min="1"
+              max="[[_maxBuckets(verticalFacet,verticalBagOfWords)]]"
+              value="{{verticalBuckets}}"
+              label="Count">
+        </paper-input>
+      </template>
+
+      <div class="dropdown-holder">
+        <paper-dropdown-menu id="colorBy" label="Color By">
+          <paper-listbox class="dropdown-content" selected="{{colorBy}}"
+              attr-for-selected="value" slot="dropdown-content">
+            <paper-item value="">(none)</paper-item>
+            <template is="dom-repeat" items="[[keys]]">
+              <paper-item value="[[item]]">[[item]]</paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+      </div>
+
+      <div class="dropdown-holder">
+        <paper-dropdown-menu
+            id="imageFieldName"
+            label="Label By">
+          <paper-listbox
+              class="dropdown-content"
+              selected="{{imageFieldName}}"
+              attr-for-selected="value" slot="dropdown-content">
+            <paper-item value="">
+              [[_getImageFieldNameDefaultLabel(atlasUrl)]]
+            </paper-item>
+            <template is="dom-repeat" items="[[keys]]">
+              <paper-item value="[[item]]">[[item]]</paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+      </div>
+
+      <div class="dropdown-holder horizontal-position">
+        <paper-dropdown-menu
+              id="horizontalPosition"
+              label="Scatter | X-Axis"
+              class="position-selector">
+          <paper-listbox
+              class="dropdown-content"
+              selected="{{horizontalPosition}}"
+              attr-for-selected="value" slot="dropdown-content">
+            <paper-item value="">(default)</paper-item>
+            <template is="dom-repeat" items="[[keys]]"
+                filter="_isKeyNumeric">
+              <paper-item value="[[item]]">[[item]]</paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+      </div>
+
+      <div class="dropdown-holder vertical-position">
+        <paper-dropdown-menu
+              id="verticalPosition"
+              label="Scatter | Y-Axis"
+              class="position-selector">
+          <paper-listbox
+              class="dropdown-content"
+              selected="{{verticalPosition}}"
+              attr-for-selected="value" slot="dropdown-content">
+            <paper-item value="">(default)</paper-item>
+            <template is="dom-repeat" items="[[keys]]"
+                filter="_isKeyNumeric">
+              <paper-item value="[[item]]">[[item]]</paper-item>
+            </template>
+          </paper-listbox>
+        </paper-dropdown-menu>
+      </div>
+    </div>
+    <div class="overflow-holder">
+      <template is="dom-if"
+          if="[[_shouldShowOverflowMenu(colorBy, verticalFacet, horizontalFacet)]]">
+        <paper-icon-button class="dropdown-trigger" icon="more-vert"
+            alt="more-vert" id="overflowbtn" on-click="_openOverflow">
+        </paper-icon-button>
+      </template>
+      <paper-dialog id="overflowmenu" no-overlap horizontal-align="right"
+          vertical-align="top">
+        <div class="overflow-div">
+          <template is="dom-if" if="{{_isKeyCategorical(colorBy)}}">
+            <div class="dropdown-holder">
+              <paper-dropdown-menu id="paletteChoice" label="Display | Color Palette">
+                <paper-listbox class="dropdown-content"
+                    selected="{{paletteChoice}}" attr-for-selected="value"
+                    slot="dropdown-content">
+                  <paper-item value="standard">standard</paper-item>
+                  <paper-item value="warm">warm</paper-item>
+                  <paper-item value="cool">cool</paper-item>
+                  <paper-item value="assist">assist</paper-item>
+                </paper-listbox>
+              </paper-dropdown-menu>
+            </div>
+          </template>
+          <template is="dom-if" if="[[_hasWordTree(verticalFacet)]]">
+            <paper-checkbox class="overflow-checkbox" checked="{{verticalBagOfWords}}">
+              X-Axis Bag of words
+            </paper-checkbox>
+          </template>
+
+          <template is="dom-if" if="[[_hasWordTree(horizontalFacet)]]">
+            <paper-checkbox class="overflow-checkbox" checked="{{horizontalBagOfWords}}">
+              Y-Axis Bag of words
+            </paper-checkbox>
+          </template>
+        </div>
+      </paper-dialog>
+    </div>
+  </template>
+</dom-module>
+
+<script src="facets-dive-controls.js"></script>
