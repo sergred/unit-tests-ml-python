@@ -43,14 +43,14 @@ class RandomSelector(Selector):
                                for p in profiles if p.dtype == DataType.STRING]
                 elif columns == 'numeric':
                     columns = [list_of_cols.index(p.column_name)
-                               for p in profiles
-                               if p.dtype in [DataType.INTEGER, DataType.FLOAT]]
+                               for p in profiles if p.dtype
+                               in [DataType.INTEGER, DataType.FLOAT]]
                 else:
                     columns = np.random.choice(range(cols),
                                                int(np.ceil(
                                                    self.column_fraction*cols)),
                                                replace=False)
-            elif type(columns) is list:
+            else:
                 columns = [list_of_cols.index(col) for col in columns]
             tmp = dict({})
             for col in columns:
