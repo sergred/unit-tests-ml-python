@@ -1,0 +1,7 @@
+[submodule "data-linter"]
+	path = third_party/data-linter
+	url = https://github.com/brain-research/data-linter.git
+
+[submodule "facets"]
+	path = third_party/facets
+	url = https://github.com/PAIR-code/facets.git
