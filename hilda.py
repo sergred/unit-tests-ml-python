@@ -9,7 +9,7 @@ import pandas as pd
 
 from pipelines import WineQualityMissingPipeline
 # from pipelines import CreditGPipeline
-from profilers import DataFrameProfiler, SklearnPipelineProfiler
+from profilers import SklearnPipelineProfiler
 from test_suite import AutomatedTestSuite, TestSuite, Test
 from error_generation import ExplicitMissingValues
 from models import RandomForest
@@ -38,12 +38,15 @@ def main():
     print(accuracy_score(y_test, prediction))
 
     suite = TestSuite()
+    automated_suite = AutomatedTestSuite()
+    pipeline_profile = SklearnPipelineProfiler().on(model)
 
     suite.add(Test()
               .is_complete('volatile_acidity'))
 
-    warnings = suite.on(X_test).run()
+    warnings = suite.on(X_test)
 
+    print("*** TEST_SUITE, X_TEST")
     if warnings and (len(warnings) != 0):
         print("======= WARNINGS =======")
         for warn in warnings:
@@ -52,8 +55,9 @@ def main():
     error_generator = ExplicitMissingValues()
     corrupted_X_test = error_generator.run(X_test, ['volatile_acidity'])
 
-    warnings = suite.on(corrupted_X_test).run()
+    warnings = suite.on(corrupted_X_test)
 
+    print("*** TEST_SUITE, CORRUPTED_X_TEST")
     if warnings and (len(warnings) != 0):
         print("======= WARNINGS =======")
         for warn in warnings:
@@ -61,11 +65,9 @@ def main():
 
     print()
 
-    data_profile = DataFrameProfiler().on(X_train)
-    pipeline_profile = SklearnPipelineProfiler().on(model)
-    automated_suite = AutomatedTestSuite()
-    tests, warnings = automated_suite.run(data_profile, pipeline_profile)
+    tests, warnings = automated_suite.run(corrupted_X_test, pipeline_profile)
 
+    print("*** AUTOMATED_TEST_SUITE, CORRUPTED_X_TEST")
     if warnings and (len(warnings) != 0):
         print("======= WARNINGS =======")
         for warn in warnings:

@@ -60,11 +60,15 @@ class DataFrameAnalyzer(Analyzer):
             1: self.all_stat_items,
             3: self.all_stat_items + self.date_stat_items,
             4: self.all_stat_items + self.obj_stat_items,
-            6: self.all_stat_items + self.obj_stat_items + self.date_stat_items,
+            6: self.all_stat_items + self.obj_stat_items
+            + self.date_stat_items,
             8: self.all_stat_items + self.num_stat_items,
-            10: self.all_stat_items + self.date_stat_items + self.num_stat_items,
-            11: self.all_stat_items + self.obj_stat_items + self.num_stat_items,
-            13: self.all_stat_items + self.obj_stat_items + self.date_stat_items + self.num_stat_items
+            10: self.all_stat_items + self.date_stat_items
+            + self.num_stat_items,
+            11: self.all_stat_items + self.obj_stat_items
+            + self.num_stat_items,
+            13: self.all_stat_items + self.obj_stat_items
+            + self.date_stat_items + self.num_stat_items
         })
         self.compute = dict({
             'count': lambda x: np.array([x.shape[0]]*x.shape[1]),
@@ -147,7 +151,8 @@ class DataFrameAnalyzer(Analyzer):
             if not columns and not column_stats:
                 dtype = DataType.FLOAT
             elif columns is not None and column_stats is not None:
-                if column_stats.min.is_integer() and column_stats.max.is_integer():
+                if (column_stats.min.is_integer()
+                        and column_stats.max.is_integer()):
                     if map(lambda x: x.is_integer(), columns).all():
                         dtype = DataType.INTEGER
                     else:

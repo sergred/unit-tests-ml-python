@@ -25,11 +25,6 @@ class BasePipeline:
         return complete_pipeline
 
 
-class AbalonePipeline(BasePipeline):
-    def __init__(self):
-        pass
-
-
 class OrdinalScaleTransformer(BaseEstimator, TransformerMixin):
     def __init__(self, array):
         self.array = array

@@ -20,29 +20,15 @@ class ErrorType(Enum):
     MISSING_VALUE = 1
     ANOMALY = 2
     TYPO = 3
-    INCOMPLETE = 4
-    DUPLICATE = 5
-    INTEGRITY = 6
-    NOT_IN_RANGE = 7
+    DUPLICATE = 4
+    INTEGRITY = 5
+    NOT_IN_RANGE = 6
 
 
 class Severity(Enum):
     UNDEFINED = 0
     INFO = 1
     CRITICAL = 2
-
-
-class Warning:
-    def __init__(self, error_type, severity, message):
-        self.error_type = error_type
-        self.message = message
-        self.severity = severity
-
-    def __repr__(self):
-        return "{:10}: {:s}".format(self.severity.name, self.message.strip())
-
-    def __str__(self):
-        return self.__repr__()
 
 
 class ColumnProfile:
@@ -97,8 +83,9 @@ class DataFrameProfiler(Profiler):
             stats = self.analyzer.stats.iloc[:, i].values
             profile = ColumnProfile(col, self.analyzer.dtypes[i],
                                     DataScale.UNDEFINED,
-                                    np.sum(pd.isnull(data.iloc[i])),
-                                    int(stats[1]), self.analyzer.histograms[i])
+                                    np.sum(~data.iloc[i].notna()),
+                                    stats[1],
+                                    self.analyzer.histograms[i])
             self.profiles.append(profile)
         return self.profiles
 

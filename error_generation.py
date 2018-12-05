@@ -4,16 +4,22 @@
 """"""
 
 from selection import RandomSelector
-from analyzers import DataType
 from copy import deepcopy
 import numpy as np
+
 
 class ErrorGenerator:
     def __init__(self):
         pass
 
-    def on(self, data):
-        return self.run(data)
+    def __enter__(self):
+        pass
+
+    def __exit__(self):
+        pass
+
+    def on(self, data, columns=None):
+        return self.run(data, columns)
 
     def run(self, data, columns=None):
         return data
@@ -28,21 +34,17 @@ class Anomalies(ErrorGenerator):
         factor = np.random.random() - .5
         return mean + np.sign(factor)*(3. + 2 * factor)*std
 
-    def on(self, data):
-        return self.run(data)
+    def on(self, data, columns=None):
+        return self.run(data, columns)
 
     def run(self, data, columns=None):
         data = deepcopy(data)
-        selector = RandomSelector().on(data, column_type=DataType.INTEGER)
+        selector = RandomSelector().on(data, columns)
         for col in selector.keys():
             idx = selector[col]
             mean, std = np.mean(data.iloc[:, col]), np.std(data.iloc[:, col])
-            data.iloc[idx, col] = np.vectorize(self.get_anomaly)(mean, std).astype(data.dtypes[col])
-        selector = RandomSelector().on(data, column_type=DataType.FLOAT)
-        for col in selector.keys():
-            idx = selector[col]
-            mean, std = np.mean(data.iloc[:, col]), np.std(data.iloc[:, col])
-            data.iloc[idx, col] = np.vectorize(self.get_anomaly)(mean, std).astype(data.dtypes[col])
+            data.iloc[idx, col] = (np.vectorize(self.get_anomaly)(mean, std)
+                                   .astype(data.dtypes[col]))
         return data
 
 
@@ -54,11 +56,12 @@ class ExplicitMissingValues(ErrorGenerator):
     def apply(self, function, data, cell_ids):
         data = deepcopy(data)
         for col, idx in cell_ids.items():
-            data.iloc[idx, col] = np.vectorize(function)(data.iloc[idx, col]).astype(data.dtypes[col])
+            data.iloc[idx, col] = np.vectorize(function)(data.iloc[idx, col])
         return data
 
     def run(self, data, columns=None):
-        return self.apply(lambda x: np.nan, data, RandomSelector().on(data, columns))
+        return self.apply(
+            lambda x: np.nan, data, RandomSelector().on(data, columns))
 
 
 class ImplicitMissingValues(ErrorGenerator):
@@ -73,9 +76,12 @@ class ImplicitMissingValues(ErrorGenerator):
         return data
 
     def run(self, data, columns=None):
-        tmp = self.apply(lambda x: 9999, data, RandomSelector().on(data, column_type=DataType.INTEGER))
-        return self.apply(lambda x: 'undefined', tmp, RandomSelector().on(data, column_type=DataType.STRING))
-
+        tmp = self.apply(
+            lambda x: 9999,
+            data, RandomSelector().on(data, columns='numeric'))
+        return self.apply(
+            lambda x: 'undefined',
+            tmp, RandomSelector().on(data, columns='string'))
 
 
 # class ImplicitMissingValues(ErrorGenerator):
@@ -112,7 +118,6 @@ class ImplicitMissingValues(ErrorGenerator):
 class Typos(ErrorGenerator):
     class __Typos:
         def __init__(self):
-            ErrorGenerator.__init__(self)
             self.keyApprox = {
                 'q': "qwasedzx",
                 'w': "wqesadrfcx",
@@ -144,7 +149,8 @@ class Typos(ErrorGenerator):
     instance = None
 
     def __init__(self):
-        if not Typos.instance: Typos.instance = Typos.__Typos()
+        if not Typos.instance:
+            Typos.instance = Typos.__Typos()
 
     def __getattr__(self, name):
         return getattr(self.instance, name)
@@ -152,16 +158,21 @@ class Typos(ErrorGenerator):
     def apply(self, function, data, cell_ids):
         data = deepcopy(data)
         for col, idx in cell_ids.items():
-            data.iloc[idx, col] = np.vectorize(function)(data.iloc[idx, col]).astype(data.dtypes[col])
+            data.iloc[idx, col] = (np.vectorize(function)(data.iloc[idx, col])
+                                   .astype(data.dtypes[col]))
         return data
 
     def run(self, data, columns=None):
-        return self.apply(self.butterfinger, data, RandomSelector().on(data, column_type=DataType.STRING))
+        return self.apply(
+            self.butterfinger,
+            data, RandomSelector().on(data, columns='string'))
 
     def butterfinger(self, text, prob=.05):
         def foo(letter):
             if letter.lower() in self.keyApprox.keys():
-                tmp = np.random.choice(list(self.keyApprox[letter.lower()])) if np.random.random() <= prob else letter
+                cond = np.random.random() <= prob
+                tmp = np.random.choice(
+                    list(self.keyApprox[letter.lower()])) if cond else letter
                 return tmp.upper() if letter.isupper() else tmp
             return letter
         return np.array("".join(map(foo, text)))
