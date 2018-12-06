@@ -10,9 +10,9 @@ import apache_beam as beam
 import tensorflow as tf
 import pandas as pd
 import numpy as np
+import sys
 import os
 
-import sys
 sys.path.append(os.path.dirname(os.getcwd()))
 
 from analyzers import DataType
@@ -41,14 +41,14 @@ DEFAULT_STATS_LINTERS = [  # These linters require dataset statistics.
     linters.CircularDomainDetector,
     linters.DateTimeAsStringDetector,
     linters.DuplicateExampleDetector,
-#    linters.EnumDetector,
-#    linters.IntAsFloatDetector,
+    linters.EnumDetector,
+    linters.IntAsFloatDetector,
     linters.NonNormalNumericFeatureDetector,
     linters.NumberAsStringDetector,
     linters.TailedDistributionDetector,
     linters.TokenizableStringDetector,
     linters.UncommonListLengthDetector,
-#    linters.UncommonSignDetector,
+    linters.UncommonSignDetector,
     linters.ZipCodeAsNumberDetector,
 ]
 
@@ -101,7 +101,7 @@ class TFRecordHelper:
                 'float32': DataType.FLOAT,
                 'float64': DataType.FLOAT,
                 'byte': DataType.OBJECT,
-                # 'string': DataType.STRING,
+                'string': DataType.STRING,
                 'object': DataType.OBJECT
             })
 

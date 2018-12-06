@@ -3,7 +3,7 @@
 
 """"""
 
-from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.impute import SimpleImputer
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
@@ -42,8 +42,8 @@ class OneHotEncodingTransformer(BaseEstimator, TransformerMixin):
         self.encoder = OneHotEncoder(categories=values, sparse=False)
 
     def transform(self, X, *_):
-        enc = self.encoder.fit(X.values.reshape(-1, 1))
-        return self.encoder.transform(X.values.reshape(-1, 1))
+        # enc = self.encoder.fit(X.values.reshape(-1, 1))
+        return self.encoder.fit_transform(X.values.reshape(-1, 1))
 
     def fit(self, *_):
         return self
@@ -116,8 +116,10 @@ class CreditGPipeline(BasePipeline):
         }
 
         column_transformers = ColumnTransformer(
-            [("%s_idx" % col, OrdinalScaleTransformer(ord), col) for col, ord in ordering.items()] +
-            [("%s_idx" % col, OneHotEncodingTransformer(val), col) for col, val in categorical_features.items()],
+            [("%s_idx" % col, OrdinalScaleTransformer(ord), col)
+             for col, ord in ordering.items()]
+            + [("%s_idx" % col, OneHotEncodingTransformer(val), col)
+               for col, val in categorical_features.items()],
             remainder='passthrough')
         self.pipe = Pipeline([('column transformers', column_transformers)])
 

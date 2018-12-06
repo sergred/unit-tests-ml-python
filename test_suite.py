@@ -5,8 +5,9 @@
 
 import numpy as np
 
-from profilers import ErrorType, Severity, DataFrameProfiler
+from profilers import ErrorType, Severity
 from analyzers import DataScale
+from messages import Message
 
 
 class Check:
@@ -17,8 +18,7 @@ class Check:
         self.severity = severity
 
     def __repr__(self):
-        return """Check:{:s} - IF {:s}""".format(self.error_type.name,
-                                                 self.message)
+        return Message().check.format(self.error_type.name, self.message)
 
     def __str__(self):
         return self.__repr__()
@@ -48,11 +48,10 @@ class Warning:
                      self.severity.value))
 
     def __eq__(self, other):
-        # return self.__hash__() == other.__hash__()
-        a = (self.error_type.value == other.error_type.value)
-        b = (self.message == other.message)
-        c = (self.severity.value == other.severity.value)
-        return a and b and c
+        return self.__hash__() == other.__hash__()
+        # return ((self.error_type.value == other.error_type.value)
+        #         and (self.message == other.message)
+        #         and (self.severity.value == other.severity.value))
 
 
 class Test:
@@ -65,7 +64,7 @@ class Test:
 
     def __repr__(self):
         checks = ", ".join(map(str, self.checks))
-        return """Test:{:10} ({:s})""".format(self.severity.name, checks)
+        return Message().test.format(self.severity.name, checks)
 
     def __str__(self):
         return self.__repr__()
@@ -75,26 +74,28 @@ class Test:
         self.checks.append(Check(assumption, error_type, severity, message))
         return self
 
-    def has_size(self, size):
-        return self._add(lambda x: x.shape[0] == size,
-                         ErrorType.INTEGRITY, """
-                         DataFrame does not have %d rows""" % size)
+    def has_size(self, profile):
+        return self._add(lambda x: x.shape[0] == profile.size,
+                         ErrorType.INTEGRITY,
+                         Message().wrong_size % profile.size)
 
-    def is_complete(self, column):
-        return self._add(lambda x: x[column].notna().all(),
-                         ErrorType.MISSING_VALUE, """
-                         Column %s is not complete""" % column)
+    def is_complete(self, profile):
+        return self._add(
+            lambda x: x[profile.column_name].notna().all(),
+            ErrorType.MISSING_VALUE,
+            Message().not_complete % profile.column_name)
 
-    def is_unique(self, column):
-        return self._add(lambda x: np.unique(x[column]).shape[0] == x.shape[0],
-                         ErrorType.DUPLICATE, """
-                         Values in column %s are not unique""" % column)
+    def is_unique(self, profile):
+        return self._add(
+            lambda x: np.unique(x[profile.column_name]).shape[0] == x.shape[0],
+            ErrorType.DUPLICATE, Message().not_unique % profile.column_name)
 
-    def is_in_range(self, column, range):
-        return self._add(lambda x: x[column].isin(range).all(),
-                         ErrorType.NOT_IN_RANGE, """
-                         Values in column %s are not in range %s."""
-                         % (column, str(range)))
+    def is_in_range(self, profile):
+        return self._add(
+            lambda x: (x[profile.column_name].isin(profile.range).all()
+                       if profile.range is not None else True),
+            ErrorType.NOT_IN_RANGE,
+            Message().not_in_range % (profile.column_name, str(profile.range)))
 
     def __hash__(self):
         return hash((self.severity.value, tuple(self.checks)))
@@ -115,7 +116,7 @@ class TestSuite:
         return self
 
     def run(self, data):
-        assert data is not None, "Call TestSuite on(data) method first."
+        assert data is not None, Message().no_testsuite
         warnings = []
         for test in self.tests:
             for check in test:
@@ -129,18 +130,13 @@ class TestSuite:
 class AutomatedTestSuite:
     class __PlaceHolder:
         def __init__(self):
-            self.mes_unavailable_data_profile = """
-            Cannot analyze the dataset. Data profile is not available.
-            """
-            self.mes_unavailable_pipeline_profile = """
-            Cannot analyze the pipeline. Pipeline profile is not available.
-            """
             self.col_wise = dict({
-                'missing_values': lambda x: self.missing_values(x)
+                'missing_values': lambda x: (Test(Severity.CRITICAL)
+                                             .is_complete(x))
             })
             self.nominal_col = dict({
-                'values_in_range': lambda x: Test(
-                    Severity.CRITICAL).is_in_range(x.column_name, x.range)
+                'values_in_range': lambda x: (Test(Severity.CRITICAL)
+                                              .is_in_range(x))
             })
             self.ordinal_col = dict({
 
@@ -164,14 +160,8 @@ class AutomatedTestSuite:
                 DataScale.INTERVAL: self.interval_col,
                 DataScale.RATIO: self.ratio_col
             })
-
-        def missing_values(self, col_profile):
-            # An error is critical if there weren't any missing values
-            # discovered before. If missing values originally present - this
-            # issue is considered to be known thus not critical.
-            # condition = col_profile.num_missing == 0
-            # severity = Severity.CRITICAL if condition else Severity.INFO
-            return Test(Severity.CRITICAL).is_complete(col_profile.column_name)
+            self.tests = None
+            self.warnings = None
 
     instance = None
 
@@ -182,36 +172,49 @@ class AutomatedTestSuite:
     def __getattr__(self, name):
         return getattr(self.instance, name)
 
-    def run(self, data, pipeline_profile):
-        data_profile = DataFrameProfiler().on(data)
-        tests, warnings = [], []
+    def on(self, data):
+        return self.run(data)
+
+    def with_profiles(self, data_profile, pipeline_profile):
+        self.tests, self.warnings = [], []
         if data_profile is not None:
-            for column_profile in data_profile:
+            for column_profile in data_profile.profiles:
                 # print(column_profile)
-                for k, v in self.col_wise.items():
-                    tests.append(v(column_profile))
-                for k, v in self.scale_wise[column_profile.scale].items():
-                    tests.append(v(column_profile))
-            for k, v in self.set_wise.items():
-                tests.append(v(data_profile))
+                for test in self.col_wise.values():
+                    self.tests.append(test(column_profile))
+                for test in self.scale_wise[column_profile.scale].values():
+                    self.tests.append(test(column_profile))
+            for test in self.set_wise.values():
+                self.tests.append(test(data_profile))
         else:
-            warnings.append(Warning(ErrorType.UNAVAILABLE, Severity.CRITICAL,
-                                    self.mes_unavailable_data_profile))
+            self.warnings.append(
+                Warning(ErrorType.UNAVAILABLE, Severity.CRITICAL,
+                        Message().data_profile_not_available))
         if pipeline_profile is not None:
             for step in pipeline_profile:
                 # print(step)
-                for k, v in self.pipe.items():
-                    tests.append(v(pipeline_profile))
+                for test in self.pipe.values():
+                    self.tests.append(test(pipeline_profile))
         else:
-            warnings.append(Warning(ErrorType.UNAVAILABLE, Severity.CRITICAL,
-                                    self.mes_unavailable_pipeline_profile))
-        for test in tests:
+            self.warnings.append(
+                Warning(ErrorType.UNAVAILABLE, Severity.CRITICAL,
+                        Message().pipeline_profile_not_available))
+        return self
+
+    def get_tests(self):
+        assert self.tests is not None, Message().no_profile
+        return self.tests
+
+    def run(self, data):
+        assert self.tests is not None, Message().no_profile
+        assert self.warnings is not None, Message().no_profile
+        for test in self.tests:
             for check in test.checks:
                 if check.assumption(data):
                     continue
-                warnings.append(
+                self.warnings.append(
                     Warning(check.error_type, test.severity, check.message))
-        return tests, warnings
+        return self.tests, self.warnings
 
 
 def main():

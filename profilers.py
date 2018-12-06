@@ -12,6 +12,7 @@ import numpy as np
 import pickle
 
 from analyzers import DataFrameAnalyzer, DataScale
+from messages import Message
 
 
 class ErrorType(Enum):
@@ -42,7 +43,9 @@ class ColumnProfile:
         self.num_unique = num_unique
         self.histogram = histogram
         if scale == DataScale.NOMINAL:
-            self.range = self.histogram.keys()
+            self.range = [t[0] for t in self.histogram]
+        else:
+            self.range = None
 
     def str(self):
         return self.__repr__()
@@ -76,18 +79,25 @@ class DataFrameProfiler(Profiler):
     def on(self, data):
         return self.run(data, columns=None)
 
+    def for_column(self, column_name):
+        columns = [profile.column_name for profile in self.profiles]
+        assert column_name in columns, Message().no_column % column_name
+        return self.profiles[columns.index(column_name)]
+
     def run(self, data, columns=None):
+        self.profiles = []
         self.analyzer = DataFrameAnalyzer()
         self.analyzer.run(data, columns)
         for i, col in enumerate(data.columns):
-            stats = self.analyzer.stats.iloc[:, i].values
+            # print(stats)
+            scale = self.analyzer.scales[i]
             profile = ColumnProfile(col, self.analyzer.dtypes[i],
-                                    DataScale.UNDEFINED,
+                                    scale,
                                     np.sum(~data.iloc[i].notna()),
-                                    stats[1],
+                                    self.analyzer.stats.loc['unique', col],
                                     self.analyzer.histograms[i])
             self.profiles.append(profile)
-        return self.profiles
+        return self
 
 
 class PipelineProfiler(Profiler):
@@ -130,7 +140,8 @@ class SklearnPipelineProfiler(Profiler):
         # print(pipeline)
         for step in pipeline.steps:
             name, func = step
-            print("%s\n%s\n" % (name, self.derive_info(func)))
+            # print("%s\n%s\n" % (name, self.derive_info(func)))
+        return None
 
 
 def main():

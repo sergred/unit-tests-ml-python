@@ -5,23 +5,27 @@
 
 from sklearn.model_selection import train_test_split as split
 from sklearn.metrics import accuracy_score
+from quilt.data.usr import credit, wine
+
 import pandas as pd
 
-from pipelines import WineQualityMissingPipeline
-# from pipelines import CreditGPipeline
-from profilers import SklearnPipelineProfiler
+from profilers import SklearnPipelineProfiler, DataFrameProfiler
 from test_suite import AutomatedTestSuite, TestSuite, Test
 from error_generation import ExplicitMissingValues
+from pipelines import WineQualityMissingPipeline
+# from pipelines import CreditGPipeline
 from models import RandomForest
 
 
 def main():
     """
     """
-    # data = pd.read_csv('resources/data/dataset_31_credit-g.csv')
-    data = pd.read_csv('resources/data/wine-quality/wine-quality-red.csv')
+    # data = credit.dataset_31_credit_g()
+    data = wine.wine_quality_red_csv()
     print(data.shape)
     print(data.columns)
+    print((data['free_sulfur_dioxide'].values == 5.5).any())
+    print((data['free_sulfur_dioxide'].values == 40.5).any())
 
     target = "class"
     X, y = data[[col for col in data.columns if col != target]], data[target]
@@ -39,10 +43,12 @@ def main():
 
     suite = TestSuite()
     automated_suite = AutomatedTestSuite()
+    data_profile = DataFrameProfiler().on(X_train)
     pipeline_profile = SklearnPipelineProfiler().on(model)
 
     suite.add(Test()
-              .is_complete('volatile_acidity'))
+              .is_complete(data_profile.for_column('volatile_acidity'))
+              .is_in_range(data_profile.for_column('alcohol')))
 
     warnings = suite.on(X_test)
 
@@ -63,9 +69,9 @@ def main():
         for warn in warnings:
             print(warn)
 
-    print()
-
-    tests, warnings = automated_suite.run(corrupted_X_test, pipeline_profile)
+    tests, warnings = (automated_suite
+                       .with_profiles(data_profile, pipeline_profile)
+                       .run(corrupted_X_test))
 
     print("*** AUTOMATED_TEST_SUITE, CORRUPTED_X_TEST")
     if warnings and (len(warnings) != 0):

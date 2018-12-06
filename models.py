@@ -3,17 +3,14 @@
 
 """Models configuration."""
 
-from sklearn.preprocessing import StandardScaler
 from visualization_utils import visualize
 # from metrics import precision, recall
-from settings import get_param
 
-import pandas as pd
 import numpy as np
 import pickle
-import os
 
 np.random.seed(0)
+
 
 class Model:
     def __init__(self):
@@ -52,11 +49,11 @@ class Model:
         """
         print(self.name)
         # scores = cross_val_score(clf, X, labels, cv=20, scoring='accuracy')
-        # print "Accuracy: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2)
+        # print Message().accuracy % (scores.mean(), scores.std() * 2)
         # scores = cross_val_score(clf, X, labels, cv=20, scoring='precision')
-        # print "Precision: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2)
+        # print Message().precision % (scores.mean(), scores.std() * 2)
         # scores = cross_val_score(clf, X, labels, cv=20, scoring='recall')
-        # print "Recall: %0.2f (+/- %0.2f)" % (scores.mean(), scores.std() * 2)
+        # print Message().recall % (scores.mean(), scores.std() * 2)
         self.fit(X_train, y_train)
         predicted = self.predict(X_test)
         visualize(y_test, predicted, class_names)
@@ -69,7 +66,8 @@ class Model:
 class SVM(Model):
     def __init__(self, kernel='poly'):
         from sklearn import svm
-        self.dump = pickle.dumps(svm.SVC(kernel=kernel, decision_function_shape='ovr'))
+        self.dump = pickle.dumps(
+            svm.SVC(kernel=kernel, decision_function_shape='ovr'))
         self.name = "svm"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -86,7 +84,8 @@ class KNN(Model):
     def __init__(self, n_neighbors):
         from sklearn.neighbors import KNeighborsClassifier
         """KNN with distance-based weight points"""
-        self.dump = pickle.dumps(KNeighborsClassifier(n_neighbors, weights='distance'))
+        self.dump = pickle.dumps(
+            KNeighborsClassifier(n_neighbors, weights='distance'))
         self.name = "knn"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -110,7 +109,9 @@ class GausNB(Model):
 class DecisionTree(Model):
     def __init__(self):
         from sklearn.tree import DecisionTreeClassifier
-        self.dump = pickle.dumps(DecisionTreeClassifier(max_depth=None, min_samples_split=2, random_state=0))
+        self.dump = pickle.dumps(
+            DecisionTreeClassifier(max_depth=None, min_samples_split=2,
+                                   random_state=0))
         self.name = "dtree"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -126,7 +127,9 @@ class RandomForest(Model):
 class ExtremelyRandomizedTrees(Model):
     def __init__(self, size):
         from sklearn.ensemble import ExtraTreesClassifier
-        self.dump = pickle.dumps(ExtraTreesClassifier(n_estimators=size, max_depth=None, min_samples_split=2, random_state=0))
+        self.dump = pickle.dumps(
+            ExtraTreesClassifier(n_estimators=size, max_depth=None,
+                                 min_samples_split=2, random_state=0))
         self.name = "ertc"
         self.save_path = "models/%s_%d.pkl" % (self.name, size)
 
@@ -135,7 +138,9 @@ class BaggingRandomForest(Model):
     def __init__(self, size):
         from sklearn.ensemble import RandomForestClassifier
         from sklearn.ensemble import BaggingClassifier
-        self.dump = pickle.dumps(BaggingClassifier(RandomForestClassifier(n_estimators=size), max_samples=0.5, max_features=0.5))
+        self.dump = pickle.dumps(
+            BaggingClassifier(RandomForestClassifier(n_estimators=size),
+                              max_samples=0.5, max_features=0.5))
         self.name = "brfc"
         self.save_path = "models/%s_%d.pkl" % (self.name, size)
 
@@ -145,10 +150,12 @@ class MLPC(Model):
         from sklearn.neural_network import MLPClassifier
         self.input_size = input_size
         self.dump = pickle.dumps(MLPClassifier(solver='adam', alpha=1e-4,
-                                              learning_rate_init=1e-5,
-                                              hidden_layer_sizes=input_size, random_state=1))
+                                               learning_rate_init=1e-5,
+                                               hidden_layer_sizes=input_size,
+                                               random_state=1))
         self.name = "mlpc"
-        self.save_path = "models/%s_%s.pkl" % (self.name, "_".join([str(i) for i in input_size]))
+        self.save_path = ("models/%s_%s.pkl" %
+                          (self.name, "_".join([str(i) for i in input_size])))
 
 
 class XGB(Model):
@@ -161,6 +168,7 @@ class XGB(Model):
 
 def main():
     pass
+
 
 if __name__ == '__main__':
     main()

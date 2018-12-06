@@ -6,17 +6,19 @@
 from sklearn.model_selection import train_test_split as split
 from quilt.data.usr import credit
 from tabulate import tabulate
-import pandas as pd
 import numpy as np
 import unittest
 
 from models import DecisionTree, RandomForest, ExtremelyRandomizedTrees, XGB
 from error_generation import ImplicitMissingValues, ExplicitMissingValues
-from profilers import SklearnPipelineProfiler, ErrorType, Severity
+from profilers import SklearnPipelineProfiler, DataFrameProfiler
+from profilers import ErrorType, Severity
 from pipelines import WineQualityPipeline, WineQualityMissingPipeline
 from pipelines import AbalonePipeline, CreditGPipeline
 from test_suite import AutomatedTestSuite, TestSuite, Test, Warning
 from error_generation import Anomalies, Typos
+from analyzers import DataScale
+from messages import Message
 
 
 class Table:
@@ -86,6 +88,8 @@ class CreditGTest(unittest.TestCase):
         y = data[target]
         sets = split(X, y, test_size=0.2, random_state=0)
         self.X_train, self.X_test, self.y_train, self.y_test = sets
+        self.data_profile = DataFrameProfiler().on(self.X_train)
+        self.automated_suite = AutomatedTestSuite()
 
     def tearDown(self):
         pass
@@ -103,15 +107,15 @@ class CreditGTest(unittest.TestCase):
         # print(accuracy_score(y_test, prediction))
 
         # suite = TestSuite()
-        automated_suite = AutomatedTestSuite()
         pipeline_profile = SklearnPipelineProfiler().on(model)
-        tests, warnings = automated_suite.run(corrupted_X_test,
-                                              pipeline_profile)
-        for column in columns:
-            self.assertIn(Test(Severity.CRITICAL).is_complete(column), tests)
+        tests, warnings = (self.automated_suite
+                           .with_profiles(self.data_profile, pipeline_profile)
+                           .on(corrupted_X_test))
+        for column, profile in zip(columns, self.data_profile.profiles):
+            self.assertIn(Test(Severity.CRITICAL).is_complete(profile), tests)
             self.assertIn(Warning(ErrorType.MISSING_VALUE,
-                                  Severity.CRITICAL, """
-                                  Column %s is not complete""" % column),
+                                  Severity.CRITICAL,
+                                  Message().not_complete % column),
                           warnings)
 
     def test_typos_in_data_with_random_forest(self):
@@ -127,15 +131,17 @@ class CreditGTest(unittest.TestCase):
         # print(accuracy_score(y_test, prediction))
 
         # suite = TestSuite()
-        automated_suite = AutomatedTestSuite()
         pipeline_profile = SklearnPipelineProfiler().on(model)
-        tests, warnings = automated_suite.run(corrupted_X_test,
-                                              pipeline_profile)
-        for column in columns:
-            self.assertIn(Test(Severity.CRITICAL).is_in_range(column), tests)
-            self.assertIn(Warning(ErrorType.TYPO,
-                                  Severity.CRITICAL, """
-                                  Column %s is not complete""" % column),
+        tests, warnings = (self.automated_suite
+                           .with_profiles(self.data_profile, pipeline_profile)
+                           .on(corrupted_X_test))
+        for column, profile in zip(columns, self.data_profile.profiles):
+            if profile.scale != DataScale.NOMINAL:
+                continue
+            self.assertIn(Test(Severity.CRITICAL).is_in_range(profile), tests)
+            self.assertIn(Warning(ErrorType.NOT_IN_RANGE,
+                                  Severity.CRITICAL, Message().not_in_range %
+                                  (profile.column_name, str(profile.range))),
                           warnings)
 
     # def test_(self):

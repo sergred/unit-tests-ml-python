@@ -37,7 +37,7 @@ class RandomSelector(Selector):
                 #            .on(data)
                 #            .get_column_idx(column_type))
             elif isinstance(columns, str):
-                profiles = DataFrameProfiler().on(data)
+                profiles = DataFrameProfiler().on(data).profiles
                 if columns == 'string':
                     columns = [list_of_cols.index(p.column_name)
                                for p in profiles if p.dtype == DataType.STRING]

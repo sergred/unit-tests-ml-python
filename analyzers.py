@@ -3,7 +3,7 @@
 
 """"""
 
-from collections import Counter
+from collections import Counter, defaultdict
 from enum import Enum
 import pandas as pd
 import numpy as np
@@ -50,65 +50,64 @@ class DataFrameAnalyzer(Analyzer):
     def __init__(self):
         Analyzer.__init__(self)
         self.stats = None
-        self.discrete_threshold = 120
-        self.all_stat_items = ['count']
-        self.obj_stat_items = ['unique', 'top', 'freq']
-        self.date_stat_items = ['first', 'last']
-        self.num_stat_items = ['mean', 'std',
-                               'min', '25%', '50%', '75%', 'max']
-        self.stat_items_strategy = dict({
-            1: self.all_stat_items,
-            3: self.all_stat_items + self.date_stat_items,
-            4: self.all_stat_items + self.obj_stat_items,
-            6: self.all_stat_items + self.obj_stat_items
-            + self.date_stat_items,
-            8: self.all_stat_items + self.num_stat_items,
-            10: self.all_stat_items + self.date_stat_items
-            + self.num_stat_items,
-            11: self.all_stat_items + self.obj_stat_items
-            + self.num_stat_items,
-            13: self.all_stat_items + self.obj_stat_items
-            + self.date_stat_items + self.num_stat_items
-        })
+        self.discrete_threshold = 60
         self.compute = dict({
-            'count': lambda x: np.array([x.shape[0]]*x.shape[1]),
-            'unique': lambda x: np.unique(x, axis=0),
-            'top': lambda x: [None]*x.shape[1],
-            'freq': lambda x: [None]*x.shape[1],
-            'first': lambda x: [None]*x.shape[1],
-            'last': lambda x: [None]*x.shape[1],
+            'count': lambda x: self._compute_default(x, x.shape[0]),
+            'unique': lambda x: self._compute_unique(x),
+            'top': lambda x: self._compute_default(x, None),
+            'freq': lambda x: self._compute_default(x, None),
+            'first': lambda x: self._compute_default(x, None),
+            'last': lambda x: self._compute_default(x, None),
             'mean': lambda x: np.mean(x, axis=0),
             'std': lambda x: np.std(x, axis=0),
             'min': lambda x: np.min(x, axis=0),
-            '25%': lambda x: [None]*x.shape[1],
-            '50%': lambda x: [None]*x.shape[1],
-            '75%': lambda x: [None]*x.shape[1],
+            '25%': lambda x: self._compute_default(x, None),
+            '50%': lambda x: self._compute_default(x, None),
+            '75%': lambda x: self._compute_default(x, None),
             'max': lambda x: np.max(x, axis=0)
         })
+
+    def _compute_default(self, x, value):
+        return [value]*(x.shape[1] if len(x.shape) > 1 else 1)
+
+    def _compute_unique(self, x):
+        return [len(Counter(x.iloc[:, i]).items()) for i in range(x.shape[1])]
 
     def on(self, dataframe):
         return self.run(dataframe)
 
-    def _get_histogram(self, dataframe, column_idx=None):
-        if column_idx is None:
-            column_idx = range(dataframe.shape[1])
-        column_idx = np.array(column_idx)
-        stats = self._get_stats(column_idx, ['unique', 'min', 'max'])
+    def _get_histogram(self, columns=None):
+        if columns is None:
+            columns = self.columns
+        # stats = self._get_stats(column_idx, ['unique', 'min', 'max'])
         histograms = []
-        for idx in column_idx:
+        for idx, col in enumerate(columns):
             tmp = None
-            if stats[0, idx] <= self.discrete_threshold:
-                tmp = list(Counter(dataframe.iloc[:, idx].values).items())
+            if self.stats.loc['unique', col] <= self.discrete_threshold:
+                # tmp = list(Counter(self.data[col].values).items())
+                # tmp = np.unique(self.data[col].values)
+                column = sorted(self.data[col].values)
+                tmp = []
+                current = column[0]
+                count = 1
+                for i in range(1, len(column)):
+                    if column[i] == current:
+                        count += 1
+                    else:
+                        tmp.append((current, count))
+                        count = 1
+                        current = column[i]
+                tmp.append((current, count))
             else:
                 if self.dtypes[idx] == DataType.STRING:
                     # TODO: word embeddings?
                     tmp = None
                 else:
-                    bins = np.linspace(stats[1, idx], stats[2, idx],
+                    bins = np.linspace(self.stats.loc['min', col],
+                                       self.stats.loc['max', col],
                                        self.discrete_threshold)
-                    # bins = np.arange(stats[1, idx], stats[2, idx], step)
                     digitized = np.digitize(
-                        dataframe.iloc[:, idx].astype(np.float64).values, bins)
+                        self.data.iloc[:, idx].astype(np.float64).values, bins)
                     bin_height = [np.sum(digitized == i)
                                   for i in range(1, len(bins))]
                     tmp = list(zip(bins[:-1], bins[1:], bin_height))
@@ -116,31 +115,26 @@ class DataFrameAnalyzer(Analyzer):
             histograms.append(tmp)
         return np.array(histograms)
 
-    def _get_stats(self, columns, keys):
-        # assert set(keys) < set(self.stat_items.keys()), "Wrong key"
+    def _get_stats(self, columns):
+        column_idx = [self.columns.index(col) for col in columns]
         tmp = []
-        for key in keys:
-            if key not in self.stat_items.keys():
-                tmp.append(self.compute[key](columns))
+        for key in self.compute:
+            if key in self.stat_items:
+                to_append = list(
+                    self.stats.iloc[self.stat_items[key], column_idx].values)
             else:
-                tmp.append(self.stats.iloc[self.stat_items[key],
-                                           columns].values)
-        # print(self.stats.shape)
-        # print(self.stats)
-        # print([self.stat_items[k] for k in list(keys)])
-        # print(columns)
-        return np.array(tmp)
+                to_append = self.compute[key](self.data.iloc[:, column_idx])
+            tmp.append(to_append)
+        return pd.DataFrame(tmp, columns=self.columns,
+                            index=self.compute.keys())
 
     def _get_column_scale(self, columns):
-        if pd.isnull(self._get_stats(columns, ['unique', 'top', 'freq'])).all():
-            # if (column_stats.min == 0.) and (columns.stats.max == 1.):
-            #     scale = DataScale.RATIO
-            scale = DataScale.ORDINAL
-        elif not pd.isnull(self._get_stats(columns, ['unique', 'top', 'freq'])).all():
-            scale = DataScale.NOMINAL
-        else:
-            scale = DataScale.UNDEFINED
-        return scale
+        scales = []
+        for col in columns:
+            condition = self.stats.loc['unique', col] > self.discrete_threshold
+            scale = DataScale.ORDINAL if condition else DataScale.NOMINAL
+            scales.append(scale)
+        return scales
 
     def _get_column_type(self, column_type, columns=None, column_stats=None):
         if column_type == 'object':
@@ -167,18 +161,16 @@ class DataFrameAnalyzer(Analyzer):
         return np.arange(self.columns.shape[0])[self.dtypes == type]
 
     def run(self, dataframe, columns=None):
-        self.stats = dataframe.describe(include='all')
-        stat_items = self.stat_items_strategy[self.stats.shape[0]]
-        self.stat_items = dict(zip(stat_items, range(len(stat_items))))
-        self.columns = dataframe.columns if not columns else columns
+        self.data = dataframe
+        self.columns = list(self.data.columns) if not columns else columns
+        self.stats = self.data.describe(include='all')
+        self.stat_items = dict(map(lambda t: (t[1], t[0]),
+                                   enumerate(self.stats.index.values)))
+        self.stats = self._get_stats(self.columns)
+        self.scales = self._get_column_scale(self.columns)
         self.dtypes = np.array([self._get_column_type(col)
-                                for col in dataframe.dtypes])
-        for idx, type in enumerate(self.dtypes):
-            if type is DataType.INTEGER:
-                self.stats.iloc[self.stat_items['unique'], idx] = np.unique(
-                    dataframe.iloc[:, idx]).shape[0]
-        # for col in self.columns: column_stats = self.stats.loc[:, col]
-        self.histograms = self._get_histogram(dataframe)
+                                for col in self.data.dtypes])
+        self.histograms = self._get_histogram()
         return self
 
 
