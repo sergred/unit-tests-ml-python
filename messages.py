@@ -16,6 +16,9 @@ class Message:
             self.not_complete = "Column %s is not complete"
             self.not_unique = "Values in column %s are not unique"
             self.not_in_range = "Values in column %s are not in range %s"
+            self.not_a_pipeline = "sklearn.pipeline.Pipeline required"
+            self.not_enough_history = """
+            Call .iteration method to get more history""".strip()
             self.no_testsuite = "Call TestSuite on(data) method first."
             self.no_profile = "Call .with_profiles method first."
             self.no_column = "Column %s does not exist"

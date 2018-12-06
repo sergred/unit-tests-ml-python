@@ -84,20 +84,20 @@ class DataFrameAnalyzer(Analyzer):
         for idx, col in enumerate(columns):
             tmp = None
             if self.stats.loc['unique', col] <= self.discrete_threshold:
-                # tmp = list(Counter(self.data[col].values).items())
+                tmp = list(Counter(self.data[col].values).items())
                 # tmp = np.unique(self.data[col].values)
-                column = sorted(self.data[col].values)
-                tmp = []
-                current = column[0]
-                count = 1
-                for i in range(1, len(column)):
-                    if column[i] == current:
-                        count += 1
-                    else:
-                        tmp.append((current, count))
-                        count = 1
-                        current = column[i]
-                tmp.append((current, count))
+                # column = sorted(self.data[col].values)
+                # tmp = []
+                # current = column[0]
+                # count = 1
+                # for i in range(1, len(column)):
+                #     if column[i] == current:
+                #         count += 1
+                #     else:
+                #         tmp.append((current, count))
+                #         count = 1
+                #         current = column[i]
+                # tmp.append((current, count))
             else:
                 if self.dtypes[idx] == DataType.STRING:
                     # TODO: word embeddings?

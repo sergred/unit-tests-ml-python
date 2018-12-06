@@ -12,7 +12,7 @@ import pandas as pd
 from profilers import SklearnPipelineProfiler, DataFrameProfiler
 from test_suite import AutomatedTestSuite, TestSuite, Test
 from error_generation import ExplicitMissingValues
-from pipelines import WineQualityMissingPipeline
+from pipelines import WineQualityPipeline
 # from pipelines import CreditGPipeline
 from models import RandomForest
 
@@ -24,8 +24,6 @@ def main():
     data = wine.wine_quality_red_csv()
     print(data.shape)
     print(data.columns)
-    print((data['free_sulfur_dioxide'].values == 5.5).any())
-    print((data['free_sulfur_dioxide'].values == 40.5).any())
 
     target = "class"
     X, y = data[[col for col in data.columns if col != target]], data[target]
@@ -34,7 +32,7 @@ def main():
                                              random_state=0)
 
     # pipeline = CreditGPipeline()
-    pipeline = WineQualityMissingPipeline()
+    pipeline = WineQualityPipeline()
     classifier = RandomForest(size=40)
     model = pipeline.with_estimator(classifier).fit(X_train, y_train)
 
