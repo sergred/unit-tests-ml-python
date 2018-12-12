@@ -84,37 +84,6 @@ class ImplicitMissingValues(ErrorGenerator):
             tmp, RandomSelector().on(data, columns='string'))
 
 
-# class ImplicitMissingValues(ErrorGenerator):
-#     def __init__(self):
-#         ErrorGenerator.__init__(self)
-#         pass
-#
-#     def run(self, data, columns=None):
-#         # rows, cols = data.shape
-#         # if not columns:
-#         #     # random 'corrupting'
-#         #     fraction = .4
-#         #     columns = np.random.choice(range(cols), int(np.ceil(fraction*cols)), replace=False)
-#         return Error_Generator().error_generator(method_gen=Implicit_Missing_Value(),
-#                                                  selector=List_selected(),
-#                                                  percentage=20,
-#                                                  dataset=data,
-#                                                  mute_column=[])
-#
-#
-# class ExplicitMissingValues(ErrorGenerator):
-#     def __init__(self):
-#         ErrorGenerator.__init__(self)
-#         pass
-#
-#     def run(self, data, columns=None):
-#         return Error_Generator().error_generator(method_gen=Explicit_Missing_Value(),
-#                                                  selector=List_selected(),
-#                                                  percentage=20,
-#                                                  dataset=data,
-#                                                  mute_column=[])
-
-
 class Typos(ErrorGenerator):
     class __Typos:
         def __init__(self):

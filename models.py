@@ -67,7 +67,8 @@ class SVM(Model):
     def __init__(self, kernel='poly'):
         from sklearn import svm
         self.dump = pickle.dumps(
-            svm.SVC(kernel=kernel, decision_function_shape='ovr'))
+            svm.SVC(kernel=kernel, decision_function_shape='ovr',
+                    max_iter=2400))
         self.name = "svm"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -75,7 +76,7 @@ class SVM(Model):
 class LinearSVM(Model):
     def __init__(self):
         from sklearn import svm
-        self.dump = pickle.dumps(svm.LinearSVC())
+        self.dump = pickle.dumps(svm.LinearSVC(max_iter=2400))
         self.name = "lsvm"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -93,7 +94,9 @@ class KNN(Model):
 class LogRegression(Model):
     def __init__(self):
         from sklearn.linear_model import LogisticRegression
-        self.dump = pickle.dumps(LogisticRegression())
+        self.dump = pickle.dumps(LogisticRegression(solver='lbfgs',
+                                                    multi_class='auto',
+                                                    max_iter=800))
         self.name = "logreg"
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -152,7 +155,8 @@ class MLPC(Model):
         self.dump = pickle.dumps(MLPClassifier(solver='adam', alpha=1e-4,
                                                learning_rate_init=1e-5,
                                                hidden_layer_sizes=input_size,
-                                               random_state=1))
+                                               random_state=1,
+                                               max_iter=4000))
         self.name = "mlpc"
         self.save_path = ("models/%s_%s.pkl" %
                           (self.name, "_".join([str(i) for i in input_size])))

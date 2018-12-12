@@ -3,13 +3,14 @@
 
 """"""
 
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.impute import SimpleImputer
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import StandardScaler
 from sklearn.compose import ColumnTransformer
+from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 from copy import deepcopy
-import numpy as np
+
+from transformers import OneHotEncodingTransformer, OrdinalScaleTransformer
+from transformers import LambdaEncodingTransformer, Imputer
 
 
 class BasePipeline:
@@ -21,32 +22,8 @@ class BasePipeline:
 
     def with_estimator(self, estimator):
         complete_pipeline = deepcopy(self.pipe)
-        complete_pipeline.steps.append(['estimator', estimator])
+        complete_pipeline.steps.append(('estimator', estimator))
         return complete_pipeline
-
-
-class OrdinalScaleTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, array):
-        self.array = array
-
-    def transform(self, X, *_):
-        vfunc = np.vectorize(lambda x: self.array.index(x))
-        return vfunc(X).reshape(-1, 1)
-
-    def fit(self, *_):
-        return self
-
-
-class OneHotEncodingTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, values):
-        self.encoder = OneHotEncoder(categories=values, sparse=False)
-
-    def transform(self, X, *_):
-        # enc = self.encoder.fit(X.values.reshape(-1, 1))
-        return self.encoder.fit_transform(X.values.reshape(-1, 1))
-
-    def fit(self, *_):
-        return self
 
 
 class CreditGPipeline(BasePipeline):
@@ -77,51 +54,67 @@ class CreditGPipeline(BasePipeline):
 
         """
         @checking_status: ["'0<=X<200'", "'<0'", "'>=200'", "'no checking'"]
-        @credit_history: ["'all paid'", "'critical/other existing credit'", "'delayed previously'", "'existing paid'", "'no credits/all paid'"]
-        purpose: ["'domestic appliance'", "'new car'", "'used car'", 'business', 'education', 'furniture/equipment', 'other', 'radio/tv', 'repairs', 'retraining']
-        @savings_status: ["'100<=X<500'", "'500<=X<1000'", "'<100'", "'>=1000'", "'no known savings'"]
+        @credit_history: ["'all paid'", "'critical/other existing credit'",
+        "'delayed previously'", "'existing paid'", "'no credits/all paid'"]
+        purpose: ["'domestic appliance'", "'new car'", "'used car'",
+        'business', 'education', 'furniture/equipment', 'other', 'radio/tv',
+        'repairs', 'retraining']
+        @savings_status: ["'100<=X<500'", "'500<=X<1000'", "'<100'",
+        "'>=1000'", "'no known savings'"]
         @employment: ["'1<=X<4'", "'4<=X<7'", "'<1'", "'>=7'", 'unemployed']
         !installment_commitment: [1, 2, 3, 4]
-        personal_status: ["'female div/dep/mar'", "'male div/sep'", "'male mar/wid'", "'male single'"]
+        personal_status: ["'female div/dep/mar'", "'male div/sep'", "'male
+        mar/wid'", "'male single'"]
         other_parties: ["'co applicant'", 'guarantor', 'none']
         !residence_since: [1, 2, 3, 4]
-        property_magnitude: ["'life insurance'", "'no known property'", "'real estate'", 'car']
+        property_magnitude: ["'life insurance'", "'no known property'",
+        "'real estate'", 'car']
         other_payment_plans: ['bank', 'none', 'stores']
         housing: ["'for free'", 'own', 'rent']
         !existing_credits: [1, 2, 3, 4]
-        job: ["'high qualif/self emp/mgmt'", "'unemp/unskilled non res'", "'unskilled resident'", 'skilled']
+        job: ["'high qualif/self emp/mgmt'", "'unemp/unskilled non res'",
+        "'unskilled resident'", 'skilled']
         !num_dependents: [1, 2]
         own_telephone: ['none', 'yes']
         foreign_worker: ['no', 'yes']
         !class: ['bad', 'good']
         """
         ordering = {
-            "checking_status": ["'no checking'", "'<0'", "'0<=X<200'", "'>=200'"],
-            "credit_history": ["'all paid'", "'critical/other existing credit'",
-                               "'delayed previously'", "'existing paid'", "'no credits/all paid'"],
-            "savings_status": ["'no known savings'", "'<100'", "'100<=X<500'", "'500<=X<1000'", "'>=1000'"],
-            "employment": ["unemployed", "'<1'", "'1<=X<4'", "'4<=X<7'", "'>=7'"]
+            "checking_status": ["'no checking'", "'<0'", "'0<=X<200'",
+                                "'>=200'"],
+            "credit_history": ["'all paid'",
+                               "'critical/other existing credit'",
+                               "'delayed previously'", "'existing paid'",
+                               "'no credits/all paid'"],
+            "savings_status": ["'no known savings'", "'<100'", "'100<=X<500'",
+                               "'500<=X<1000'", "'>=1000'"],
+            "employment": ["unemployed", "'<1'", "'1<=X<4'",
+                           "'4<=X<7'", "'>=7'"]
         }
         categorical_features = {
-            "purpose": ["'domestic appliance'", "'new car'", "'used car'", 'business', 'education',
-                        'furniture/equipment', 'other', 'radio/tv', 'repairs', 'retraining'],
-            "personal_status": ["'female div/dep/mar'", "'male div/sep'", "'male mar/wid'", "'male single'"],
+            "purpose": ["'domestic appliance'", "'new car'", "'used car'",
+                        'business', 'education', 'furniture/equipment',
+                        'other', 'radio/tv', 'repairs', 'retraining'],
+            "personal_status": ["'female div/dep/mar'", "'male div/sep'",
+                                "'male mar/wid'", "'male single'"],
             "other_parties": ["'co applicant'", 'guarantor', 'none'],
-            "property_magnitude": ["'life insurance'", "'no known property'", "'real estate'", 'car'],
+            "property_magnitude": ["'life insurance'", "'no known property'",
+                                   "'real estate'", 'car'],
             "other_payment_plans": ['bank', 'none', 'stores'],
             "housing": ["'for free'", 'own', 'rent'],
-            "job": ["'high qualif/self emp/mgmt'", "'unemp/unskilled non res'", "'unskilled resident'", 'skilled'],
+            "job": ["'high qualif/self emp/mgmt'", "'unemp/unskilled non res'",
+                    "'unskilled resident'", 'skilled'],
             "own_telephone": ['none', 'yes'],
             "foreign_worker": ['no', 'yes']
         }
-
         column_transformers = ColumnTransformer(
             [("%s_idx" % col, OrdinalScaleTransformer(ord), col)
              for col, ord in ordering.items()]
             + [("%s_idx" % col, OneHotEncodingTransformer(val), col)
                for col, val in categorical_features.items()],
             remainder='passthrough')
-        self.pipe = Pipeline([('column transformers', column_transformers)])
+        self.pipe = Pipeline([('column transformers', column_transformers),
+                              ('scaler', StandardScaler())])
 
 
 class WineQualityPipeline(BasePipeline):
@@ -175,10 +168,204 @@ class AbalonePipeline(BasePipeline):
                               ('scaler', StandardScaler())])
 
 
+class AdultPipeline(BasePipeline):
+    def __init__(self):
+        """
+        @age: [17, 18, 19, ... 87, 88, 90]
+        @workclass: [ ?,  Federal-gov,  Local-gov,  Never-worked,  Private,
+        Self-emp-inc,  Self-emp-not-inc,  State-gov,  Without-pay]
+        @fnlwgt: [12285, 13769, 14878, 18827, ... 1366120, 1455435, 1484705]
+        @education: [ 10th,  11th,  12th,  1st-4th,  5th-6th,  7th-8th,  9th,
+        Assoc-acdm,  Assoc-voc,  Bachelors,  Doctorate,  HS-grad,  Masters,
+        Preschool,  Prof-school,  Some-college]
+        @education_num: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        @marital_status: [ Divorced,  Married-AF-spouse,  Married-civ-spouse,
+        Married-spouse-absent,  Never-married,  Separated,  Widowed]
+        @occupation: [ ?,  Adm-clerical,  Armed-Forces,  Craft-repair,
+        Exec-managerial,  Farming-fishing,  Handlers-cleaners,
+        Machine-op-inspct,  Other-service,  Priv-house-serv,  Prof-specialty,
+        Protective-serv,  Sales,  Tech-support,  Transport-moving]
+        @relationship: [ Husband,  Not-in-family,  Other-relative,  Own-child,
+        Unmarried,  Wife]
+        @race: [ Amer-Indian-Eskimo, Asian-Pac-Islander, Black, Other, White]
+        @sex: [ Female,  Male]
+        @capital_gain: [0, 114, 401, ... 34095, 41310, 99999]
+        @capital_loss: [0, 155, 213, ... 3770, 3900, 4356]
+        @hours_per_week: [1, 2, 3, ... 97, 98, 99]
+        @native_country: [ ?,  Cambodia,  Canada,  China,  Columbia,  Cuba,
+        Dominican-Republic,  Ecuador,  El-Salvador,  England,  France,
+        Germany,  Greece,  Guatemala,  Haiti,  Holand-Netherlands,  Honduras,
+        Hong,  Hungary,  India,  Iran,  Ireland,  Italy,  Jamaica,  Japan,
+        Laos,  Mexico,  Nicaragua,  Outlying-US(Guam-USVI-etc),  Peru,
+        Philippines,  Poland,  Portugal,  Puerto-Rico,  Scotland,  South,
+        Taiwan,  Thailand,  Trinadad&Tobago,  United-States,  Vietnam,
+        Yugoslavia]
+        @class: [ <=50K,  >50K]
+        """
+        ordering = {
+            'education': ['Preschool', '1st-4th', '5th-6th', '7th-8th',
+                          '9th', '10th', '11th', '12th', 'HS-grad',
+                          'Prof-school', 'Some-college', 'Assoc-voc',
+                          'Assoc-acdm', 'Bachelors', 'Masters',
+                          'Doctorate']
+        }
+        categorical_features = {
+            'workclass': ['?', 'Federal-gov', 'Local-gov', 'Never-worked',
+                          'Private', 'Self-emp-inc', 'Self-emp-not-inc',
+                          'State-gov', 'Without-pay'],
+            'marital_status': ['Divorced', 'Married-AF-spouse',
+                               'Married-civ-spouse', 'Married-spouse-absent',
+                               'Never-married', 'Separated', 'Widowed'],
+            'occupation': ['?', 'Adm-clerical', 'Armed-Forces', 'Craft-repair',
+                           'Exec-managerial', 'Farming-fishing',
+                           'Handlers-cleaners', 'Machine-op-inspct',
+                           'Other-service', 'Priv-house-serv',
+                           'Prof-specialty', 'Protective-serv', 'Sales',
+                           'Tech-support', 'Transport-moving'],
+            'relationship': ['Husband', 'Not-in-family', 'Other-relative',
+                             'Own-child', 'Unmarried', 'Wife'],
+            'race': ['Amer-Indian-Eskimo', 'Asian-Pac-Islander', 'Black',
+                     'Other', 'White'],
+            'sex': ['Female', 'Male'],
+            'native_country': ['?', 'Cambodia', 'Canada', 'China', 'Columbia',
+                               'Cuba', 'Dominican-Republic', 'Ecuador',
+                               'El-Salvador', 'England', 'France', 'Germany',
+                               'Greece', 'Guatemala', 'Haiti',
+                               'Holand-Netherlands', 'Honduras', 'Hong',
+                               'Hungary', 'India', 'Iran', 'Ireland', 'Italy',
+                               'Jamaica', 'Japan', 'Laos', 'Mexico',
+                               'Nicaragua', 'Outlying-US(Guam-USVI-etc)',
+                               'Peru', 'Philippines', 'Poland', 'Portugal',
+                               'Puerto-Rico', 'Scotland', 'South', 'Taiwan',
+                               'Thailand', 'Trinadad&Tobago', 'United-States',
+                               'Vietnam', 'Yugoslavia']}
+        encoding = {
+            'capital_gain': lambda x: x > 0,
+            'capital_loss': lambda x: x > 0
+        }
+        column_transformers = ColumnTransformer(
+            [("%s_idx" % col, OrdinalScaleTransformer(ord), col)
+             for col, ord in ordering.items()]
+            + [("%s_idx" % col, OneHotEncodingTransformer(val), col)
+               for col, val in categorical_features.items()]
+            + [("%s_idx" % col, LambdaEncodingTransformer(func), col)
+               for col, func in encoding.items()],
+            remainder='passthrough')
+        self.pipe = Pipeline([('column transformers', column_transformers),
+                              ('scaler', StandardScaler())])
+
+
+class AdultMissingPipeline(BasePipeline):
+    def __init__(self):
+        """
+        @age: [17, 18, 19, ... 87, 88, 90]
+        @workclass: [ ?,  Federal-gov,  Local-gov,  Never-worked,  Private,
+        Self-emp-inc,  Self-emp-not-inc,  State-gov,  Without-pay]
+        @fnlwgt: [12285, 13769, 14878, 18827, ... 1366120, 1455435, 1484705]
+        @education: [ 10th,  11th,  12th,  1st-4th,  5th-6th,  7th-8th,  9th,
+        Assoc-acdm,  Assoc-voc,  Bachelors,  Doctorate,  HS-grad,  Masters,
+        Preschool,  Prof-school,  Some-college]
+        @education_num: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+        @marital_status: [ Divorced,  Married-AF-spouse,  Married-civ-spouse,
+        Married-spouse-absent,  Never-married,  Separated,  Widowed]
+        @occupation: [ ?,  Adm-clerical,  Armed-Forces,  Craft-repair,
+        Exec-managerial,  Farming-fishing,  Handlers-cleaners,
+        Machine-op-inspct,  Other-service,  Priv-house-serv,  Prof-specialty,
+        Protective-serv,  Sales,  Tech-support,  Transport-moving]
+        @relationship: [ Husband,  Not-in-family,  Other-relative,  Own-child,
+        Unmarried,  Wife]
+        @race: [ Amer-Indian-Eskimo, Asian-Pac-Islander, Black, Other, White]
+        @sex: [ Female,  Male]
+        @capital_gain: [0, 114, 401, ... 34095, 41310, 99999]
+        @capital_loss: [0, 155, 213, ... 3770, 3900, 4356]
+        @hours_per_week: [1, 2, 3, ... 97, 98, 99]
+        @native_country: [ ?,  Cambodia,  Canada,  China,  Columbia,  Cuba,
+        Dominican-Republic,  Ecuador,  El-Salvador,  England,  France,
+        Germany,  Greece,  Guatemala,  Haiti,  Holand-Netherlands,  Honduras,
+        Hong,  Hungary,  India,  Iran,  Ireland,  Italy,  Jamaica,  Japan,
+        Laos,  Mexico,  Nicaragua,  Outlying-US(Guam-USVI-etc),  Peru,
+        Philippines,  Poland,  Portugal,  Puerto-Rico,  Scotland,  South,
+        Taiwan,  Thailand,  Trinadad&Tobago,  United-States,  Vietnam,
+        Yugoslavia]
+        @class: [ <=50K,  >50K]
+        """
+        ordering = {
+            'education': ['Preschool', '1st-4th', '5th-6th', '7th-8th',
+                          '9th', '10th', '11th', '12th', 'HS-grad',
+                          'Prof-school', 'Some-college', 'Assoc-voc',
+                          'Assoc-acdm', 'Bachelors', 'Masters',
+                          'Doctorate']
+        }
+        categorical_features = {
+            'workclass': ['Federal-gov', 'Local-gov', 'Never-worked',
+                          'Private', 'Self-emp-inc', 'Self-emp-not-inc',
+                          'State-gov', 'Without-pay'],
+            'marital_status': ['Divorced', 'Married-AF-spouse',
+                               'Married-civ-spouse', 'Married-spouse-absent',
+                               'Never-married', 'Separated', 'Widowed'],
+            'occupation': ['Adm-clerical', 'Armed-Forces', 'Craft-repair',
+                           'Exec-managerial', 'Farming-fishing',
+                           'Handlers-cleaners', 'Machine-op-inspct',
+                           'Other-service', 'Priv-house-serv',
+                           'Prof-specialty', 'Protective-serv', 'Sales',
+                           'Tech-support', 'Transport-moving'],
+            'relationship': ['Husband', 'Not-in-family', 'Other-relative',
+                             'Own-child', 'Unmarried', 'Wife'],
+            'race': ['Amer-Indian-Eskimo', 'Asian-Pac-Islander', 'Black',
+                     'Other', 'White'],
+            'sex': ['Female', 'Male'],
+            'native_country': ['Cambodia', 'Canada', 'China', 'Columbia',
+                               'Cuba', 'Dominican-Republic', 'Ecuador',
+                               'El-Salvador', 'England', 'France', 'Germany',
+                               'Greece', 'Guatemala', 'Haiti',
+                               'Holand-Netherlands', 'Honduras', 'Hong',
+                               'Hungary', 'India', 'Iran', 'Ireland', 'Italy',
+                               'Jamaica', 'Japan', 'Laos', 'Mexico',
+                               'Nicaragua', 'Outlying-US(Guam-USVI-etc)',
+                               'Peru', 'Philippines', 'Poland', 'Portugal',
+                               'Puerto-Rico', 'Scotland', 'South', 'Taiwan',
+                               'Thailand', 'Trinadad&Tobago', 'United-States',
+                               'Vietnam', 'Yugoslavia']}
+        encoding = {
+            'capital_gain': lambda x: x > 0,
+            'capital_loss': lambda x: x > 0
+        }
+        column_transformers = ColumnTransformer(
+            [("%s_idx" % col, OrdinalScaleTransformer(ord), col)
+             for col, ord in ordering.items()]
+            + [("%s_idx" % col, OneHotEncodingTransformer(val), col)
+               for col, val in categorical_features.items()]
+            + [("%s_idx" % col, LambdaEncodingTransformer(func), col)
+               for col, func in encoding.items()],
+            remainder='passthrough')
+        self.pipe = Pipeline([('imputer', Imputer(values=['?'])),
+                              ('column transformers', column_transformers),
+                              ('scaler', StandardScaler())])
+
+
+class HeartPipeline(BasePipeline):
+    def __init__(self):
+        """
+
+        """
+        categorical_features = {
+            'pain_type': [1, 2, 3, 4],
+            'ecg': [0, 1, 2],
+            'slope': [1, 2, 3],
+            'vessels': [0, 1, 2, 3],
+            'thal': [3, 6, 7]
+        }
+        column_transformers = ColumnTransformer(
+            [("%s_idx" % col, OneHotEncodingTransformer(val), col)
+             for col, val in categorical_features.items()],
+            remainder='passthrough')
+        self.pipe = Pipeline([('column transformers', column_transformers),
+                              ('scaler', StandardScaler())])
+
+
 def main():
     """
     """
-    pass
 
 
 if __name__ == "__main__":

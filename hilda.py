@@ -5,9 +5,7 @@
 
 from sklearn.model_selection import train_test_split as split
 from sklearn.metrics import accuracy_score
-from quilt.data.usr import credit, wine
-
-import pandas as pd
+from quilt.data.usr import wine
 
 from profilers import SklearnPipelineProfiler, DataFrameProfiler
 from test_suite import AutomatedTestSuite, TestSuite, Test

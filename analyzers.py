@@ -3,7 +3,7 @@
 
 """"""
 
-from collections import Counter, defaultdict
+from collections import Counter
 from enum import Enum
 import pandas as pd
 import numpy as np
