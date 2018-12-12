@@ -251,12 +251,12 @@ class EvaluationSuite:
                             'rfc40': RandomForest(size=40),
                             'ertc40': ExtremelyRandomizedTrees(size=40),
                             'xgb': XGB(),
-                            # 'svm': SVM(),
-                            # 'lsvm': LinearSVM(),
-                            # 'knn': KNN(n_neighbors=7),
-                            # 'logreg': LogRegression(),
+                            'svm': SVM(),
+                            'lsvm': LinearSVM(),
+                            'knn': KNN(n_neighbors=7),
+                            'logreg': LogRegression(),
                             # 'gaus': GausNB(),
-                            # 'brfc40': BaggingRandomForest(size=40),
+                            'brfc40': BaggingRandomForest(size=40),
                             # 'mlpc': MLPC(input_size=[16, 32, 16, 8])
                             }
 
@@ -346,7 +346,7 @@ class EvaluationSuite:
                                             for col in data_profiles
                                             if (type_rule(col)
                                                 and gen_rule(col))]
-                        # print(type_name)
+                        print(type_name)
                         # print(filtered_columns)
                         if len(filtered_columns) == 0:
                             res = '---'
@@ -376,7 +376,7 @@ class EvaluationSuite:
                                 res = "(%d/%d) %.4f +- %.4f" % (
                                     count, len(filtered_columns),
                                     np.mean(results), np.std(results))
-                            # print(res)
+                            print(res)
 
                         self.results.update(res, pipe_idx, clf_idx,
                                             type_idx, err_gen_idx)
