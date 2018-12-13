@@ -12,60 +12,91 @@ from copy import deepcopy
 import numpy as np
 
 from pipelines import WineQualityMissingPipeline, CreditGPipeline
+from pipelines import WineQualityPipeline
+from models import RandomForest
 from messages import Message
 
 
+class Histogram:
+    def __init__(self, data, n_bins=100, borders=None):
+        self.n_bins = n_bins
+        self.data_size = data.shape[0]
+        if borders is None:
+            self.min_val = np.min(data)
+            self.max_val = np.max(data)
+        else:
+            isinstance(borders, tuple), "borders must be a tuple"
+            len(borders) == 2, "borders is a tuple of size 2"
+            self.min_val, self.max_val = borders
+        mean_val = .5 * (self.max_val + self.min_val)
+        std_val = self.max_val - mean_val
+        bins = np.linspace(-1.001, 1.001, num=self.n_bins, endpoint=True)
+        norm_data = (data - mean_val) / std_val
+        # print(data)
+        # print(norm_data)
+        tmp = np.digitize(norm_data, bins)
+        self.binned = np.array([float(len(norm_data[tmp == i]))/self.data_size
+                                if (tmp == i).any() else .0
+                                for i in range(1, len(bins))])
+        print(self.binned)
+        print
+
+    def __foo(self, hist, bins, value):
+        bin_idx = np.argmax(bins > value)
+        left, right = bins[bin_idx], bins[bin_idx + 1]
+        factor = float(value - left) / (right - left)
+        # print(hist.shape, bins.shape)
+        return (np.sum(hist[bins <= value]) + hist[bin_idx] * factor)
+
+    def update_with(self, other):
+        if other.n_bins == self.n_bins:
+            new_histogram = other.binned
+        else:
+            new_bins = np.linspace(-1., 1., num=self.n_bins, endpoint=True)
+            other_hist = other.binned * other.data_size
+            new_histogram = [(self.__foo(other_hist, new_bins, right)
+                              - self.__foo(other_hist, new_bins, left))
+                             for left, right in zip(new_bins, new_bins[1:])]
+        factor = 1. / (self.data_size + other.data_size)
+        self.binned = factor * (self.binned + new_histogram)
+
+
 class SklearnDataShiftDetector:
-    def __init__(self, pipeline):
+    def __init__(self, pipeline, n_bins=100):
         assert isinstance(pipeline, Pipeline), Message().not_a_pipeline
         self.pipeline = pipeline
         print(self.pipeline)
         self.history = []
-        self.ks_stats, self.p_values = [], []
+        self.n_bins = n_bins
 
     def on(self, data):
         return self.run(data)
 
     def iteration(self, data):
-        intermediate_results = []
-        for i in range(len(self.pipeline.steps)):
-            pipeline_chunk = Pipeline(self.pipeline.steps[:i+1])
-            tmp = pipeline_chunk.fit_transform(data)
-            # print(tmp)
-            intermediate_results.append(tmp)
-        self.history.append(intermediate_results)
-
-    def run(self):
-        assert len(self.history) > 1, Message().not_enough_history
-        for previous, current in zip(self.history, self.history[1:]):
-            ks_stats, p_values = [], []
-            for prev, cur in zip(previous, current):
-                ks_stat, p_value = self.test(prev, cur)
-                ks_stats.append(ks_stat)
-                p_values.append(p_value)
-            self.ks_stats.append(ks_stats)
-            self.p_values.append(p_values)
+        if len(self.history) == 0:
+            for i in range(len(self.pipeline.steps)-1):
+                pipeline_chunk = Pipeline(self.pipeline.steps[:i+1])
+                self.history.append(Histogram(pipeline_chunk.transform(data),
+                                              n_bins=self.n_bins))
+            self.history.append(Histogram(self.pipeline.predict(data),
+                                          n_bins=10))
+        else:
+            old_hist = self.history
+            for i in range(len(self.pipeline.steps)-1):
+                pipeline_chunk = Pipeline(self.pipeline.steps[:i+1])
+                self.history[i].update_with(
+                    Histogram(pipeline_chunk.transform(data),
+                              n_bins=self.n_bins))
+            self.history[-1].update_with(
+                Histogram(self.pipeline.predict(data), n_bins=10))
+            results = []
+            for prev, cur in zip(old_hist, self.history):
+                results.append(ks_2samp(prev.binned, cur.binned))
+            self.ks_stats, self.p_values = zip(*results)
         return self
 
-    def test(self, previous, current, num_bins=1000):
-        min_val = np.min([np.min(previous), np.min(current)])
-        max_val = np.max([np.max(previous), np.max(current)])
-        mean_val = .5 * (max_val + min_val)
-        std_val = max_val - mean_val
-        bins = np.linspace(min_val, max_val, num_bins)
-        norm_previous = (previous - mean_val) / std_val
-        norm_current = (current - mean_val) / std_val
-        prev = np.digitize(norm_previous, bins)
-        cur = np.digitize(norm_current, bins)
-        prev_binned = [norm_previous[prev == i].mean()
-                       if (prev == i).any() else .0
-                       for i in range(1, len(bins))]
-        cur_binned = [norm_current[cur == i].mean()
-                      if (cur == i).any() else .0
-                      for i in range(1, len(bins))]
-        return ks_2samp(prev_binned, cur_binned)
-
-    def is_shifted(self, threshold=0.01):
+    def data_is_shifted(self, threshold=0.05):
+        print(self.p_values)
         return (np.array(self.p_values) < threshold).any()
 
 
@@ -74,27 +105,35 @@ def main():
     """
     # data = credit.dataset_31_credit_g()
     data = wine.wine_quality_red_csv()
-    column = data['volatile_acidity'].values.reshape(-1, 1)
+    print(data.columns)
+    # column = data['volatile_acidity'].values.reshape(-1, 1)
     # column = data[].values.reshape(-1, 1)
-    first_half, second_half = split(column, test_size=.5, random_state=0)
-    print(first_half.shape, second_half.shape)
+    X, y = data['volatile_acidity'].values.reshape(-1, 1), data['class']
+    X_train, X_test, y_train, y_test = split(X, y,
+                                             test_size=0.2,
+                                             random_state=0)
+    sets = split(X_test, y_test, test_size=.5, random_state=0)
+    X_first_half, X_second_half, y_first_half, y_second_half = sets
+    # print(X_first_half.shape, X_second_half.shape)
     # X_train, X_test, y_train, y_test = split(X, y,
     #                                          test_size=0.2,
     #                                          random_state=0)
 
-    pipeline = WineQualityMissingPipeline()
+    pipeline = WineQualityPipeline()
+    classifier = RandomForest()
+    model = pipeline.with_estimator(classifier).fit(X_train, y_train)
+    # prediction = model.predict(X_test)
     # pipeline = CreditGPipeline()
-    shift_detector = SklearnDataShiftDetector(pipeline.pipe)
-    shift_detector.iteration(first_half)
-    new_second_half = deepcopy(second_half)
-    new_second_half[np.logical_and(second_half > .4, second_half < 1.)] += .6
-    plt.plot(range(first_half.shape[0]), first_half, 'go')
+    shift_detector = SklearnDataShiftDetector(model, n_bins=30)
+    shift_detector.iteration(X_first_half)
+    new_second_half = deepcopy(X_second_half)
+    mask = np.logical_and(X_second_half > .4, X_second_half < 1.)
+    new_second_half[mask] *= 3.
+    plt.plot(range(X_first_half.shape[0]), X_first_half, 'go')
     plt.plot(range(new_second_half.shape[0]), new_second_half, 'r^')
-    # plt.show()
+    plt.show()
     shift_detector.iteration(new_second_half)
-    res = shift_detector.run()
-    print(res.p_values)
-    print(res.is_shifted())
+    print(shift_detector.data_is_shifted())
 
 
 if __name__ == "__main__":
