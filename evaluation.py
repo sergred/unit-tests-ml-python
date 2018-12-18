@@ -6,12 +6,14 @@
 from sklearn.model_selection import train_test_split as split
 # from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.metrics import accuracy_score
-from quilt.data.uciml import abalone
-from quilt.data.usr import credit
+from sklearn.pipeline import Pipeline
+# from quilt.data.uciml import abalone
+# from quilt.data.usr import credit
 from tabulate import tabulate
 import pandas as pd
 import numpy as np
 import unittest
+import time
 import os
 
 from models import DecisionTree, RandomForest, ExtremelyRandomizedTrees, XGB
@@ -22,7 +24,8 @@ from test_suite import AutomatedTestSuite, Test, Warning
 from profilers import SklearnPipelineProfiler, DataFrameProfiler
 from profilers import ErrorType, Severity
 from pipelines import WineQualityPipeline, WineQualityMissingPipeline
-from pipelines import AbalonePipeline, CreditGPipeline, AdultPipeline
+from pipelines import AbalonePipeline, CreditGPipeline
+from pipelines import AdultPipeline, AdultMissingPipeline
 from pipelines import HeartPipeline
 from error_generation import Anomalies, Typos
 from analyzers import DataScale, DataType
@@ -77,8 +80,11 @@ class Table:
 
 class CreditGTest(unittest.TestCase):
     def setUp(self):
+        self.resource_folder = get_resource_path()
         self.pipeline = CreditGPipeline()
-        data = credit.dataset_31_credit_g()
+        # data = credit.dataset_31_credit_g()
+        data = pd.read_csv(os.path.join(self.resource_folder, 'data',
+                                        'credit-g/dataset_31_credit-g.csv'))
         target = 'class'
         # I guess it will work only if the target value is the last one.
         self.features = [col for col in data.columns if col != target]
@@ -145,8 +151,11 @@ class CreditGTest(unittest.TestCase):
 
 class AbaloneTest(unittest.TestCase):
     def setUp(self):
+        self.resource_folder = get_resource_path()
         self.pipeline = AbalonePipeline()
-        data = abalone.tables.abalone()
+        # data = abalone.tables.abalone()
+        data = pd.read_csv(
+            os.path.join(self.resource_folder, 'data', 'abalone/abalone.csv'))
         target = 'Rings'
         # I guess it will work only if the target value is the last one.
         self.features = [col for col in data.columns if col != target]
@@ -243,6 +252,9 @@ class EvaluationSuite:
             'adult': (
                 'adult/adult.csv', 'class',
                 AdultPipeline()),
+            'adult-missing': (
+                'adult/adult.csv', 'class',
+                AdultMissingPipeline()),
             'heart': (
                 'heart/heart.csv', 'class',
                 HeartPipeline())}
@@ -255,9 +267,9 @@ class EvaluationSuite:
                             'lsvm': LinearSVM(),
                             'knn': KNN(n_neighbors=7),
                             'logreg': LogRegression(),
-                            # 'gaus': GausNB(),
+                            'gaus': GausNB(),
                             'brfc40': BaggingRandomForest(size=40),
-                            # 'mlpc': MLPC(input_size=[16, 32, 16, 8])
+                            'mlpc': MLPC(input_size=[16, 32, 16, 8])
                             }
 
         self.error_gens = {
@@ -284,6 +296,14 @@ class EvaluationSuite:
                              subrows=self.tests.keys(),
                              subcolumns=self.error_gens.keys())
 
+    def write_update(self, pipeline, classifier, err_gen,
+                     column, column_type, result, step=""):
+        with open('resources/results/log.csv', 'a') as f:
+            f.write("%d;%s;%s;%s;%s;%s;%s;%s\n" % (
+                int(time.time()), pipeline, classifier, err_gen, column,
+                column_type, result, step))
+        return self
+
     def run(self):
         # with self.assertRaises(SomeException) as cm:
         #     do_something()
@@ -291,11 +311,11 @@ class EvaluationSuite:
         # the_exception = cm.exception
         # self.assertEqual(the_exception.error_code, 3)
         for pipe_idx, pipe in enumerate(sorted(self.pipelines.items())):
-            name, pipeline_content = pipe
+            pipeline_name, pipeline_content = pipe
             filename, target, pipeline = pipeline_content
             data = pd.read_csv(
                 os.path.join(self.resource_folder, 'data', filename))
-            print(name)
+            print(pipeline_name)
 
             X = data[[col for col in data.columns if col != target]]
             y = data[target]
@@ -336,9 +356,10 @@ class EvaluationSuite:
 
                 # print(pipeline.fit_transform(X_train, y_train).shape)
 
-                list_of_err_gens = self.error_gens.values()
+                list_of_err_gens = self.error_gens.items()
                 for err_gen_idx, gen_content in enumerate(list_of_err_gens):
-                    err_gen, gen_rule = gen_content
+                    gen_name, info = gen_content
+                    err_gen, gen_rule = info
                     list_of_tests = self.tests.items()
                     for type_idx, type_content in enumerate(list_of_tests):
                         type_name, type_rule = type_content
@@ -358,17 +379,32 @@ class EvaluationSuite:
                                     # print(col)
                                     corrupted_X_test = err_gen.on(
                                         X_test, [col])
-                                    model = (pipeline
-                                             .with_estimator(classifier)
-                                             .fit(X_train, y_train))
+                                    steps = pipeline.pipe.steps
+                                    # print(steps)
+                                    for i in range(len(steps)):
+                                        step_idx = i
+                                        (Pipeline(steps[:i + 1])
+                                         .fit(X_train, y_train)
+                                         .transform(corrupted_X_test))
+                                    step_idx = -1
                                     prediction = model.predict(
                                         corrupted_X_test)
                                     results.append(
                                         accuracy_score(y_test, prediction))
+                                    self.write_update(pipeline_name,
+                                                      cls_name, gen_name,
+                                                      col, type_name,
+                                                      "%.4f" % results[-1])
                                     count += 1
                                 except Exception as exception:
                                     print("%s: %s" % (
                                         err_gen.__class__.__name__, exception))
+                                    self.write_update(
+                                        pipeline_name, cls_name, gen_name,
+                                        col, type_name,
+                                        "%s: %s" % (err_gen.__class__.__name__,
+                                                    exception),
+                                        steps[step_idx][0])
 
                             if len(results) == 0:
                                 res = "(%d) FAIL" % (len(filtered_columns))

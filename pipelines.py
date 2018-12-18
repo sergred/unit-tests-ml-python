@@ -3,14 +3,15 @@
 
 """"""
 
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import FunctionTransformer, StandardScaler
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
-from sklearn.pipeline import Pipeline
 from copy import deepcopy
 
 from transformers import OneHotEncodingTransformer, OrdinalScaleTransformer
-from transformers import LambdaEncodingTransformer, Imputer
+from transformers import DenseTransformer
 
 
 class BasePipeline:
@@ -22,6 +23,7 @@ class BasePipeline:
 
     def with_estimator(self, estimator):
         complete_pipeline = deepcopy(self.pipe)
+        complete_pipeline.steps.append(('to_dense', DenseTransformer()))
         complete_pipeline.steps.append(('estimator', estimator))
         return complete_pipeline
 
@@ -107,13 +109,30 @@ class CreditGPipeline(BasePipeline):
             "own_telephone": ['none', 'yes'],
             "foreign_worker": ['no', 'yes']
         }
-        column_transformers = ColumnTransformer(
+
+        # def foo(ord):
+        #     return np.vectorize(lambda x: ord.index(x))
+
+        # ordinal_scalers = ColumnTransformer(
+        #     [("%s_idx" % col, ft(foo(ord), validate=False), col)
+        #      for col, ord in ordering.items()], remainder='passthrough')
+        # one_hot_encoders = ColumnTransformer(
+        #     [("%s_idx" % col,
+        #       OneHotEncoder(categories=[val],
+        #                     n_values=[len(val)],
+        #                     sparse=False), col)
+        #      for col, val in categorical_features.items()],
+        #     remainder='passthrough')
+        ordinal_scalers = ColumnTransformer(
             [("%s_idx" % col, OrdinalScaleTransformer(ord), col)
              for col, ord in ordering.items()]
+            # , remainder='passthrough')
+            # one_hot_encoders = ColumnTransformer(
             + [("%s_idx" % col, OneHotEncodingTransformer(val), col)
                for col, val in categorical_features.items()],
             remainder='passthrough')
-        self.pipe = Pipeline([('column transformers', column_transformers),
+        self.pipe = Pipeline([('column transformers', ordinal_scalers),
+                              # ('one hot encoders', one_hot_encoders),
                               ('scaler', StandardScaler())])
 
 
@@ -161,10 +180,10 @@ class AbalonePipeline(BasePipeline):
         """
 
         """
-        column_transformers = ColumnTransformer(
+        one_hot_encoders = ColumnTransformer(
             [("Sex_idx", OneHotEncodingTransformer(['M', 'F', 'I']), "Sex")],
             remainder='passthrough')
-        self.pipe = Pipeline([('column transformers', column_transformers),
+        self.pipe = Pipeline([('one hot encoders', one_hot_encoders),
                               ('scaler', StandardScaler())])
 
 
@@ -202,13 +221,11 @@ class AdultPipeline(BasePipeline):
         Yugoslavia]
         @class: [ <=50K,  >50K]
         """
-        ordering = {
-            'education': ['Preschool', '1st-4th', '5th-6th', '7th-8th',
-                          '9th', '10th', '11th', '12th', 'HS-grad',
-                          'Prof-school', 'Some-college', 'Assoc-voc',
-                          'Assoc-acdm', 'Bachelors', 'Masters',
-                          'Doctorate']
-        }
+        ordering = ['Preschool', '1st-4th', '5th-6th', '7th-8th',
+                    '9th', '10th', '11th', '12th', 'HS-grad',
+                    'Prof-school', 'Some-college', 'Assoc-voc',
+                    'Assoc-acdm', 'Bachelors', 'Masters',
+                    'Doctorate']
         categorical_features = {
             'workclass': ['?', 'Federal-gov', 'Local-gov', 'Never-worked',
                           'Private', 'Self-emp-inc', 'Self-emp-not-inc',
@@ -239,20 +256,40 @@ class AdultPipeline(BasePipeline):
                                'Puerto-Rico', 'Scotland', 'South', 'Taiwan',
                                'Thailand', 'Trinadad&Tobago', 'United-States',
                                'Vietnam', 'Yugoslavia']}
-        encoding = {
-            'capital_gain': lambda x: x > 0,
-            'capital_loss': lambda x: x > 0
-        }
-        column_transformers = ColumnTransformer(
-            [("%s_idx" % col, OrdinalScaleTransformer(ord), col)
-             for col, ord in ordering.items()]
-            + [("%s_idx" % col, OneHotEncodingTransformer(val), col)
-               for col, val in categorical_features.items()]
-            + [("%s_idx" % col, LambdaEncodingTransformer(func), col)
-               for col, func in encoding.items()],
-            remainder='passthrough')
-        self.pipe = Pipeline([('column transformers', column_transformers),
-                              ('scaler', StandardScaler())])
+        # encoding = ['capital_gain', 'capital_loss']
+        # ordinal_scalers = ColumnTransformer(
+        #     [("%s_idx" % col, OrdinalScaleTransformer(ord), col)
+        #      for col, ord in ordering.items()]
+        #     # , remainder='passthrough')
+        #     # one_hot_encoders = ColumnTransformer(
+        #     + [("%s_idx" % col, OneHotEncodingTransformer(val), col)
+        #        for col, val in categorical_features.items()]
+        #     # remainder='passthrough')
+        #     # lambda_encoders = ColumnTransformer(
+        #     + [("%s_idx" % col, LambdaEncodingTransformer(func), col)
+        #        for col, func in encoding.items()], remainder='passthrough')
+        # self.pipe = Pipeline([('column transformers', ordinal_scalers),
+        #                       # ('one hot encoders', one_hot_encoders),
+        #                       # ('lambda encoders', lambda_encoders),
+        #                       ('scaler', StandardScaler())])
+        self.pipe = Pipeline([
+            ('transformers', FeatureUnion([
+                ('categorical features', Pipeline([
+                    ('selector', FunctionTransformer(
+                        lambda x: x[list(categorical_features.keys())],
+                        validate=False)),
+                    ('one hot encoder', OneHotEncoder())])),
+                ('ordinal features', Pipeline([
+                    ('selector', FunctionTransformer(
+                        lambda x: x[['education']],
+                        validate=False)),
+                    ('one hot encoder',
+                     OneHotEncoder(categories=[ordering]))])),
+                ('capital encoder', FunctionTransformer(
+                    lambda x: ((x[['capital_loss', 'capital_gain']] > 0)
+                               .astype(int)),
+                    validate=False))])),
+            ('scaler', StandardScaler(with_mean=False))])
 
 
 class AdultMissingPipeline(BasePipeline):
@@ -289,13 +326,12 @@ class AdultMissingPipeline(BasePipeline):
         Yugoslavia]
         @class: [ <=50K,  >50K]
         """
-        ordering = {
-            'education': ['Preschool', '1st-4th', '5th-6th', '7th-8th',
-                          '9th', '10th', '11th', '12th', 'HS-grad',
-                          'Prof-school', 'Some-college', 'Assoc-voc',
-                          'Assoc-acdm', 'Bachelors', 'Masters',
-                          'Doctorate']
-        }
+        ordering = ['Preschool', '1st-4th', '5th-6th', '7th-8th',
+                    '9th', '10th', '11th', '12th', 'HS-grad',
+                    'Prof-school', 'Some-college', 'Assoc-voc',
+                    'Assoc-acdm', 'Bachelors', 'Masters',
+                    'Doctorate']
+
         categorical_features = {
             'workclass': ['Federal-gov', 'Local-gov', 'Never-worked',
                           'Private', 'Self-emp-inc', 'Self-emp-not-inc',
@@ -326,21 +362,58 @@ class AdultMissingPipeline(BasePipeline):
                                'Puerto-Rico', 'Scotland', 'South', 'Taiwan',
                                'Thailand', 'Trinadad&Tobago', 'United-States',
                                'Vietnam', 'Yugoslavia']}
-        encoding = {
-            'capital_gain': lambda x: x > 0,
-            'capital_loss': lambda x: x > 0
-        }
-        column_transformers = ColumnTransformer(
-            [("%s_idx" % col, OrdinalScaleTransformer(ord), col)
-             for col, ord in ordering.items()]
-            + [("%s_idx" % col, OneHotEncodingTransformer(val), col)
-               for col, val in categorical_features.items()]
-            + [("%s_idx" % col, LambdaEncodingTransformer(func), col)
-               for col, func in encoding.items()],
-            remainder='passthrough')
-        self.pipe = Pipeline([('imputer', Imputer(values=['?'])),
-                              ('column transformers', column_transformers),
-                              ('scaler', StandardScaler())])
+        # encoding = {
+        #     'capital_gain': lambda x: x > 0,
+        #     'capital_loss': lambda x: x > 0
+        # }
+        # string_values = ordering + list(categorical_features.keys())
+        numeric_values = ['age', 'capital_gain', 'capital_loss',
+                          'education_num', 'hours_per_week', 'fnlwgt']
+        # imputers = FeatureUnion([
+        #     ('string imputer', ColumnTransformer(
+        #         [("%s_tmp" % col,
+        #           Imputer(values=['?'], strategy='most_frequent'), col)
+        #          for col in string_values], remainder='passthrough')),
+        #     ('numeric imputer', ColumnTransformer(
+        #         [("%s_tmp" % col, Imputer(strategy="mean"), col)
+        #          for col in numeric_values], remainder='passthrough'))])
+        # ordinal_scalers = ColumnTransformer(
+        #     [("%s_idx" % col, OrdinalScaleTransformer(ord), "%s_tmp" % col)
+        #      for col, ord in ordering.items()], remainder='passthrough')
+        # one_hot_encoders = ColumnTransformer(
+        #     [("%s_idx" % col, OneHotEncodingTransformer(val), "%s_tmp" % col)
+        #      for col, val in categorical_features.items()],
+        #     remainder='passthrough')
+        # lambda_encoders = ColumnTransformer(
+        #     [("%s_idx" % col, LambdaEncodingTransformer(func), col)
+        #      for col, func in encoding.items()], remainder='passthrough')
+
+        self.pipe = Pipeline([
+            ('transformers', FeatureUnion([
+                ('categorical features', Pipeline([
+                    ('selector', FunctionTransformer(
+                        lambda x: x[list(categorical_features.keys())],
+                        validate=False)),
+                    ('string imputer', SimpleImputer(
+                        missing_values=['?'], strategy='most_frequent')),
+                    ('one hot encoder', OneHotEncoder())])),
+                ('ordinal features', Pipeline([
+                    ('selector', FunctionTransformer(
+                        lambda x: x[['education']],
+                        validate=False)),
+                    ('string imputer', SimpleImputer(
+                        missing_values=['?'], strategy='most_frequent')),
+                    ('one hot encoder',
+                     OneHotEncoder(categories=[ordering]))])),
+                ('numeric data', Pipeline([
+                    ('selector', FunctionTransformer(
+                        lambda x: x[numeric_values], validate=False)),
+                    ('numeric imputer', SimpleImputer())])),
+                ('capital encoder', FunctionTransformer(
+                    lambda x: ((x[['capital_loss', 'capital_gain']] > 0)
+                               .astype(int)),
+                    validate=False))])),
+            ('scaler', StandardScaler(with_mean=False))])
 
 
 class HeartPipeline(BasePipeline):
@@ -355,11 +428,11 @@ class HeartPipeline(BasePipeline):
             'vessels': [0, 1, 2, 3],
             'thal': [3, 6, 7]
         }
-        column_transformers = ColumnTransformer(
+        one_hot_encoders = ColumnTransformer(
             [("%s_idx" % col, OneHotEncodingTransformer(val), col)
              for col, val in categorical_features.items()],
             remainder='passthrough')
-        self.pipe = Pipeline([('column transformers', column_transformers),
+        self.pipe = Pipeline([('one hot encoders', one_hot_encoders),
                               ('scaler', StandardScaler())])
 
 

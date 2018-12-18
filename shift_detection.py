@@ -4,14 +4,15 @@
 """"""
 
 from sklearn.model_selection import train_test_split as split
-from quilt.data.usr import wine, credit
+# from quilt.data.usr import credit
+from quilt.data.usr import wine
 from sklearn.pipeline import Pipeline
 from matplotlib import pyplot as plt
 from scipy.stats import ks_2samp
 from copy import deepcopy
 import numpy as np
 
-from pipelines import WineQualityMissingPipeline, CreditGPipeline
+# from pipelines import WineQualityMissingPipeline, CreditGPipeline
 from pipelines import WineQualityPipeline
 from models import RandomForest
 from messages import Message

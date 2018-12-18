@@ -14,14 +14,17 @@ class OrdinalScaleTransformer(BaseEstimator, TransformerMixin):
         self.array = array
 
     def transform(self, X, *_):
-        return np.vectorize(lambda x: self.array.index(x))(X).reshape(-1, 1)
+        # print('ordinal')
+        # return X.apply(lambda x: self.array.index(x))
+        return (np.vectorize(lambda x: self.array.index(x))
+                (X.values.reshape(-1, 1)))
 
     def fit(self, *_):
         return self
 
 
 class OneHotEncodingTransformer(BaseEstimator, TransformerMixin):
-    def __init__(self, val='auto'):
+    def __init__(self, val):
         self.val = val
         self.n_values = len(self.val)
         self.encoder = OneHotEncoder(categories=[self.val],
@@ -29,6 +32,7 @@ class OneHotEncodingTransformer(BaseEstimator, TransformerMixin):
                                      sparse=False)
 
     def transform(self, X, *_):
+        # print('onehot')
         return self.encoder.fit_transform(X.values.reshape(-1, 1))
 
     def fit(self, *_):
@@ -40,23 +44,39 @@ class LambdaEncodingTransformer(BaseEstimator, TransformerMixin):
         self.func = func
 
     def transform(self, X, *_):
-        return np.vectorize(self.func)(X).reshape(-1, 1)
+        # print('lambda')
+        # return X.apply(self.func)
+        return (np.vectorize(lambda x: self.func(x))
+                (X.values.reshape(-1, 1)))
 
     def fit(self, *_):
         return self
 
 
 class Imputer(BaseEstimator, TransformerMixin):
-    def __init__(self, values):
+    def __init__(self, values=np.NaN, strategy='mean'):
         self.values = values
+        self.strategy = strategy
         self.imputer = SimpleImputer(missing_values=self.values,
-                                     strategy='most_frequent')
+                                     strategy=self.strategy)
 
     def transform(self, X, *_):
+        print('imputer')
         return self.imputer.fit_transform(X.values.reshape(-1, 1))
 
     def fit(self, *_):
         return self
+
+
+class DenseTransformer(TransformerMixin):
+    def fit(self, *_):
+        return self
+
+    def transform(self, X, *_):
+        if 'todense' in dir(X):
+            return X.todense()
+        else:
+            return X
 
 
 def main():
