@@ -97,6 +97,12 @@ class Test:
             ErrorType.NOT_IN_RANGE,
             Message().not_in_range % (profile.column_name, str(profile.range)))
 
+    def is_non_negative(self, profile):
+        pass
+
+    def contains_url(self, profile):
+        pass
+
     def __hash__(self):
         return hash((self.severity.value, tuple(self.checks)))
 
