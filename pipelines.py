@@ -12,6 +12,7 @@ from copy import deepcopy
 
 from transformers import OneHotEncodingTransformer, OrdinalScaleTransformer
 from transformers import DenseTransformer
+from analyzers import DataType, DataScale
 
 
 class BasePipeline:
@@ -26,6 +27,46 @@ class BasePipeline:
         complete_pipeline.steps.append(('to_dense', DenseTransformer()))
         complete_pipeline.steps.append(('estimator', estimator))
         return complete_pipeline
+
+
+class AutomatedPipeline(BasePipeline):
+    def __init__(self, data_profile):
+        self.pipe = None
+        self.profile = data_profile.profiles
+        self.run()
+
+    def run(self):
+        num_ord_features = [col.column_name for col in self.profile
+                            if col.dtype in [DataType.INTEGER, DataType.FLOAT]]
+        num_cat_features = [col.column_name for col in self.profile
+                            if col.dtype in [DataType.INTEGER, DataType.FLOAT]
+                            and col.scale == DataScale.NOMINAL]
+        str_cat_features = [col.column_name for col in self.profile
+                            if col.dtype in [DataType.STRING]
+                            and col.scale == DataScale.NOMINAL]
+        # for column_profile in self.profile:
+        #     print(column_profile)
+
+        num_ord_transformer = Pipeline(steps=[
+            ('imputer', SimpleImputer(strategy='mean'))])
+
+        num_cat_transformer = Pipeline([
+            ('imputer', SimpleImputer(strategy='mean')),
+            ('onehot', OneHotEncoder(handle_unknown='ignore'))])
+
+        str_cat_transformer = Pipeline([
+            ('imputer', SimpleImputer(strategy='constant',
+                                      fill_value='missing')),
+            ('onehot', OneHotEncoder(handle_unknown='ignore'))])
+
+        transformers = ColumnTransformer(transformers=[
+            ('num_ord', num_ord_transformer, num_ord_features),
+            ('num_cat', num_cat_transformer, num_cat_features),
+            ('str_cat', str_cat_transformer, str_cat_features)])
+
+        self.pipe = Pipeline([
+            ('preprocessing', transformers),
+            ('scaler', StandardScaler())])
 
 
 class CreditGPipeline(BasePipeline):
