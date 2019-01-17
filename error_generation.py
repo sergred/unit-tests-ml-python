@@ -3,7 +3,7 @@
 
 """"""
 
-from selection import RandomSelector
+from selection import RandomSelector, PairSelector
 from copy import deepcopy
 import numpy as np
 
@@ -18,10 +18,10 @@ class ErrorGenerator:
     def __exit__(self):
         pass
 
-    def on(self, data, columns=None):
-        return self.run(data, columns)
+    def on(self, data, columns=None, row_fraction=.2):
+        return self.run(data, columns, row_fraction)
 
-    def run(self, data, columns=None):
+    def run(self, data, columns=None, row_fraction=.2):
         return data
 
 
@@ -34,12 +34,12 @@ class Anomalies(ErrorGenerator):
         factor = np.random.random() - .5
         return mean + np.sign(factor)*(3. + 2 * factor)*std
 
-    def on(self, data, columns=None):
-        return self.run(data, columns)
+    def on(self, data, columns=None, row_fraction=.2):
+        return self.run(data, columns, row_fraction)
 
-    def run(self, data, columns=None):
+    def run(self, data, columns=None, row_fraction=.2):
         data = deepcopy(data)
-        selector = RandomSelector().on(data, columns)
+        selector = RandomSelector(row_fraction=row_fraction).on(data, columns)
         for col in selector.keys():
             idx = selector[col]
             mean, std = np.mean(data.iloc[:, col]), np.std(data.iloc[:, col])
@@ -59,9 +59,10 @@ class ExplicitMissingValues(ErrorGenerator):
             data.iloc[idx, col] = np.vectorize(function)(data.iloc[idx, col])
         return data
 
-    def run(self, data, columns=None):
+    def run(self, data, columns=None, row_fraction=.2):
         return self.apply(
-            lambda x: np.nan, data, RandomSelector().on(data, columns))
+            lambda x: np.nan, data, RandomSelector(
+                row_fraction=row_fraction).on(data, columns))
 
 
 class ImplicitMissingValues(ErrorGenerator):
@@ -75,13 +76,15 @@ class ImplicitMissingValues(ErrorGenerator):
             data.iloc[idx, col] = np.vectorize(function)(data.iloc[idx, col])
         return data
 
-    def run(self, data, columns=None):
+    def run(self, data, columns=None, row_fraction=.2):
         tmp = self.apply(
             lambda x: 9999,
-            data, RandomSelector().on(data, columns='numeric'))
+            data, RandomSelector(
+                row_fraction=row_fraction).on(data, columns='numeric'))
         return self.apply(
             lambda x: 'undefined',
-            tmp, RandomSelector().on(data, columns='string'))
+            tmp, RandomSelector(
+                row_fraction=row_fraction).on(data, columns='string'))
 
 
 class Typos(ErrorGenerator):
@@ -131,10 +134,11 @@ class Typos(ErrorGenerator):
                                    .astype(data.dtypes[col]))
         return data
 
-    def run(self, data, columns=None):
+    def run(self, data, columns=None, row_fraction=.2):
         return self.apply(
             self.butterfinger,
-            data, RandomSelector().on(data, columns='string'))
+            data, RandomSelector(
+                row_fraction=row_fraction).on(data, columns='string'))
 
     def butterfinger(self, text, prob=.05):
         def foo(letter):
@@ -145,6 +149,26 @@ class Typos(ErrorGenerator):
                 return tmp.upper() if letter.isupper() else tmp
             return letter
         return np.array("".join(map(foo, text)))
+
+
+class SwapFields(ErrorGenerator):
+    def __init__(self):
+        ErrorGenerator.__init__(self)
+        pass
+
+    def apply(self, function, data, cell_ids):
+        df = deepcopy(data)
+        # print(cell_ids.items())
+        ((lc, lr), (rc, rr)) = cell_ids.items()
+        # TODO: swap cols
+        (df.iloc[lr, lc], df.iloc[rr, rc]) = (df.iloc[rr, rc].values,
+                                              df.iloc[lr, lc].values)
+        return df
+
+    def run(self, data, columns=None, row_fraction=.2):
+        # print(columns)
+        return self.apply(None, data, PairSelector(
+            row_fraction=row_fraction).on(data, columns))
 
 
 def main():

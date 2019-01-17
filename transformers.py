@@ -61,7 +61,7 @@ class Imputer(BaseEstimator, TransformerMixin):
                                      strategy=self.strategy)
 
     def transform(self, X, *_):
-        print('imputer')
+        print('custom imputer')
         return self.imputer.fit_transform(X.values.reshape(-1, 1))
 
     def fit(self, *_):
@@ -73,10 +73,15 @@ class DenseTransformer(TransformerMixin):
         return self
 
     def transform(self, X, *_):
-        if 'todense' in dir(X):
-            return X.todense()
-        else:
-            return X
+        return X.todense() if 'todense' in dir(X) else X
+
+
+class SklearnAutomatedFilter(TransformerMixin):
+    def fit(self, *_):
+        return self
+
+    def transform(self, X, *_):
+        pass
 
 
 def main():

@@ -12,6 +12,7 @@ from sklearn.pipeline import Pipeline
 from tabulate import tabulate
 import pandas as pd
 import numpy as np
+import traceback
 import unittest
 import time
 import os
@@ -20,6 +21,7 @@ from models import DecisionTree, RandomForest, ExtremelyRandomizedTrees, XGB
 from models import LinearSVM, SVM, KNN, GausNB, BaggingRandomForest
 from models import LogRegression, MLPC
 from error_generation import ImplicitMissingValues, ExplicitMissingValues
+from error_generation import SwapFields
 from test_suite import AutomatedTestSuite, Test, Warning
 from profilers import SklearnPipelineProfiler, DataFrameProfiler
 from profilers import ErrorType, Severity
@@ -259,18 +261,19 @@ class EvaluationSuite:
                 'heart/heart.csv', 'class',
                 HeartPipeline())}
 
-        self.classifiers = {'dtc': DecisionTree(),
-                            'rfc40': RandomForest(size=40),
-                            'ertc40': ExtremelyRandomizedTrees(size=40),
-                            'xgb': XGB(),
-                            'svm': SVM(),
-                            'lsvm': LinearSVM(),
-                            'knn': KNN(n_neighbors=7),
-                            'logreg': LogRegression(),
-                            'gaus': GausNB(),
-                            'brfc40': BaggingRandomForest(size=40),
-                            'mlpc': MLPC(input_size=[16, 32, 16, 8])
-                            }
+        self.classifiers = {
+            'dtc': DecisionTree(),
+            'rfc40': RandomForest(size=40),
+            'ertc40': ExtremelyRandomizedTrees(size=40),
+            'xgb': XGB(),
+            'svm': SVM(),
+            'lsvm': LinearSVM(),
+            'knn': KNN(n_neighbors=7),
+            'logreg': LogRegression(),
+            'gaus': GausNB(),
+            'brfc40': BaggingRandomForest(size=40),
+            'mlpc': MLPC(input_size=[16, 32, 16, 8])
+        }
 
         self.error_gens = {
             'numeric anomalies': (
@@ -281,7 +284,11 @@ class EvaluationSuite:
             'explicit misvals': (
                 ExplicitMissingValues(), lambda x: True),
             'implicit misvals': (
-                ImplicitMissingValues(), lambda x: True)}
+                ImplicitMissingValues(), lambda x: True),
+            'swap fields': (
+                SwapFields(), lambda x: True)}
+
+        self.params = [0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.8]
 
         self.tests = {'num disc': lambda x: (x.scale == DataScale.NOMINAL
                                              and x.dtype in [DataType.INTEGER,
@@ -296,13 +303,15 @@ class EvaluationSuite:
                              subrows=self.tests.keys(),
                              subcolumns=self.error_gens.keys())
 
-    def write_update(self, pipeline, classifier, err_gen,
-                     column, column_type, result, step=""):
+    def write_update(self, data):
         with open('resources/results/log.csv', 'a') as f:
-            f.write("%d;%s;%s;%s;%s;%s;%s;%s\n" % (
-                int(time.time()), pipeline, classifier, err_gen, column,
-                column_type, result, step))
+            f.write("%d;%s\n" % (int(time.time()), ";".join(map(str, data))))
         return self
+
+    def combination(self, array):
+        for i in range(len(array) - 1):
+            for j in range(i+1, len(array)):
+                yield (array[i], array[j])
 
     def run(self):
         # with self.assertRaises(SomeException) as cm:
@@ -350,8 +359,7 @@ class EvaluationSuite:
                          .fit(X_train, y_train))
                 prediction = model.predict(X_test)
                 res = accuracy_score(y_test, prediction)
-                self.results.update("%.4f" % round(res, 4),
-                                    pipe_idx, clf_idx)
+                self.results.update("%.4f" % round(res, 4), pipe_idx, clf_idx)
                 # print("%.4f" % round(res, 4))
 
                 # print(pipeline.fit_transform(X_train, y_train).shape)
@@ -372,46 +380,61 @@ class EvaluationSuite:
                         if len(filtered_columns) == 0:
                             res = '---'
                         else:
-                            count = 0
-                            results = []
+                            count, result = 0, []
+                            filtered_columns = (
+                                list(self.combination(filtered_columns))
+                                if (gen_name == 'swap fields'
+                                    and len(filtered_columns) > 1)
+                                else filtered_columns)
                             for col in filtered_columns:
-                                try:
-                                    # print(col)
-                                    corrupted_X_test = err_gen.on(
-                                        X_test, [col])
-                                    steps = pipeline.pipe.steps
-                                    # print(steps)
-                                    for i in range(len(steps)):
-                                        step_idx = i
-                                        (Pipeline(steps[:i + 1])
-                                         .fit(X_train, y_train)
-                                         .transform(corrupted_X_test))
-                                    step_idx = -1
-                                    prediction = model.predict(
-                                        corrupted_X_test)
-                                    results.append(
-                                        accuracy_score(y_test, prediction))
-                                    self.write_update(pipeline_name,
-                                                      cls_name, gen_name,
-                                                      col, type_name,
-                                                      "%.4f" % results[-1])
-                                    count += 1
-                                except Exception as exception:
-                                    print("%s: %s" % (
-                                        err_gen.__class__.__name__, exception))
-                                    self.write_update(
-                                        pipeline_name, cls_name, gen_name,
-                                        col, type_name,
-                                        "%s: %s" % (err_gen.__class__.__name__,
-                                                    exception),
-                                        steps[step_idx][0])
+                                cols = (list(col)
+                                        if isinstance(col, tuple)
+                                        else [col])
+                                for ratio in self.params:
+                                    try:
+                                        # print(col)
+                                        steps = pipeline.pipe.steps
+                                        # print(steps)
+                                        corrupted_X_test = err_gen.on(
+                                            X_test, cols, ratio)
+                                        for i in range(len(steps)):
+                                            step_idx = i
+                                            (Pipeline(steps[:i + 1])
+                                             .fit(X_train, y_train)
+                                             .transform(corrupted_X_test))
+                                        step_idx = -1
+                                        prediction = model.predict(
+                                            corrupted_X_test)
+                                        result.append(
+                                            accuracy_score(y_test, prediction))
+                                        # pipeline, classifier, err_gen,
+                                        # column, column_type, result, step
+                                        self.write_update([pipeline_name,
+                                                           cls_name, gen_name,
+                                                           str(col), type_name,
+                                                           "%.4f" % result[-1],
+                                                           "", ratio])
+                                        count += 1
+                                    except Exception as exception:
+                                        print("%s: %s" % (
+                                            err_gen.__class__.__name__,
+                                            exception))
+                                        # traceback.print_exc()
+                                        self.write_update([
+                                            pipeline_name, cls_name, gen_name,
+                                            str(col), type_name,
+                                            "%s: %s" % (
+                                                err_gen.__class__.__name__,
+                                                exception),
+                                            steps[step_idx][0], ratio])
 
-                            if len(results) == 0:
+                            if len(result) == 0:
                                 res = "(%d) FAIL" % (len(filtered_columns))
                             else:
                                 res = "(%d/%d) %.4f +- %.4f" % (
-                                    count, len(filtered_columns),
-                                    np.mean(results), np.std(results))
+                                    count,
+                                    len(self.params)*len(filtered_columns),
+                                    np.mean(result), np.std(result))
                             print(res)
 
                         self.results.update(res, pipe_idx, clf_idx,
@@ -419,7 +442,7 @@ class EvaluationSuite:
 
         self.results.show()
         self.results.save(
-            os.path.join(self.resource_folder, "results/matrix.csv"))
+            os.path.join(self.resource_folder, "results/matrix_sf.csv"))
 
 
 if __name__ == '__main__':

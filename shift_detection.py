@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split as split
 from quilt.data.usr import wine
 from sklearn.pipeline import Pipeline
 from matplotlib import pyplot as plt
+from scipy.sparse import csr_matrix
 from scipy.stats import ks_2samp
 from copy import deepcopy
 import numpy as np
@@ -20,7 +21,9 @@ from messages import Message
 
 class Histogram:
     def __init__(self, data, n_bins=100, borders=None):
-        self.n_bins = n_bins
+        self.n_bins = n_bins + 1
+        if isinstance(data, csr_matrix):
+            data = data.todense()
         self.data_size = data.shape[0]
         if borders is None:
             self.min_val = np.min(data)
@@ -33,8 +36,8 @@ class Histogram:
         std_val = self.max_val - mean_val
         bins = np.linspace(-1.001, 1.001, num=self.n_bins, endpoint=True)
         norm_data = (data - mean_val) / std_val
-        # print(data)
-        # print(norm_data)
+        print(data)
+        print(norm_data)
         tmp = np.digitize(norm_data, bins)
         self.binned = np.array([float(len(norm_data[tmp == i]))/self.data_size
                                 if (tmp == i).any() else .0

@@ -13,6 +13,7 @@ class Message:
             self.accuracy = "Accuracy: %0.2f (+/- %0.2f)"
             self.recall = "Recall: %0.2f (+/- %0.2f)"
             self.wrong_size = "DataFrame does not have %d rows"
+            self.wrong_value = "Value %s is not correct"
             self.not_complete = "Column %s is not complete"
             self.not_unique = "Values in column %s are not unique"
             self.not_in_range = "Values in column %s are not in range %s"
