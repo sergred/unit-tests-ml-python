@@ -10,7 +10,7 @@ import numpy as np
 
 class ErrorGenerator:
     def __init__(self):
-        pass
+        self.name = 'error generator'
 
     def __enter__(self):
         pass
@@ -28,7 +28,7 @@ class ErrorGenerator:
 class Anomalies(ErrorGenerator):
     def __init__(self):
         ErrorGenerator.__init__(self)
-        pass
+        self.name = 'numeric anomalies'
 
     def get_anomaly(self, mean, std):
         factor = np.random.random() - .5
@@ -51,7 +51,7 @@ class Anomalies(ErrorGenerator):
 class ExplicitMissingValues(ErrorGenerator):
     def __init__(self):
         ErrorGenerator.__init__(self)
-        pass
+        self.name = 'explicit misvals'
 
     def apply(self, function, data, cell_ids):
         data = deepcopy(data)
@@ -68,7 +68,7 @@ class ExplicitMissingValues(ErrorGenerator):
 class ImplicitMissingValues(ErrorGenerator):
     def __init__(self):
         ErrorGenerator.__init__(self)
-        pass
+        self.name = 'implicit misvals'
 
     def apply(self, function, data, cell_ids):
         data = deepcopy(data)
@@ -90,6 +90,7 @@ class ImplicitMissingValues(ErrorGenerator):
 class Typos(ErrorGenerator):
     class __Typos:
         def __init__(self):
+            self.name = 'typos'
             self.keyApprox = {
                 'q': "qwasedzx",
                 'w': "wqesadrfcx",
@@ -154,7 +155,7 @@ class Typos(ErrorGenerator):
 class SwapFields(ErrorGenerator):
     def __init__(self):
         ErrorGenerator.__init__(self)
-        pass
+        self.name = 'swap fields'
 
     def apply(self, function, data, cell_ids):
         df = deepcopy(data)

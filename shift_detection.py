@@ -78,19 +78,19 @@ class SklearnDataShiftDetector:
 
     def iteration(self, data):
         if len(self.history) == 0:
-            for i in range(len(self.pipeline.steps)-1):
-                pipeline_chunk = Pipeline(self.pipeline.steps[:i+1])
-                self.history.append(Histogram(pipeline_chunk.transform(data),
-                                              n_bins=self.n_bins))
+            # for i in range(len(self.pipeline.steps)-1):
+            #     pipeline_chunk = Pipeline(self.pipeline.steps[:i+1])
+            #     self.history.append(Histogram(pipeline_chunk.transform(data),
+            #                                   n_bins=self.n_bins))
             self.history.append(Histogram(self.pipeline.predict(data),
                                           n_bins=10))
         else:
             old_hist = self.history
-            for i in range(len(self.pipeline.steps)-1):
-                pipeline_chunk = Pipeline(self.pipeline.steps[:i+1])
-                self.history[i].update_with(
-                    Histogram(pipeline_chunk.transform(data),
-                              n_bins=self.n_bins))
+            # for i in range(len(self.pipeline.steps)-1):
+            #     pipeline_chunk = Pipeline(self.pipeline.steps[:i+1])
+            #     self.history[i].update_with(
+            #         Histogram(pipeline_chunk.transform(data),
+            #                   n_bins=self.n_bins))
             self.history[-1].update_with(
                 Histogram(self.pipeline.predict(data), n_bins=10))
             results = []

@@ -16,7 +16,7 @@ class Model:
     def __init__(self):
         self.clf = None
         self.dump = None
-        self.name = ""
+        self.name = 'model'
 
     def __str__(self):
         return str(pickle.loads(self.dump))
@@ -69,7 +69,7 @@ class SVM(Model):
         self.dump = pickle.dumps(
             svm.SVC(kernel=kernel, decision_function_shape='ovr',
                     max_iter=2400))
-        self.name = "svm"
+        self.name = 'svm'
         self.save_path = "models/%s.pkl" % (self.name, )
 
 

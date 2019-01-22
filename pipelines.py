@@ -24,7 +24,7 @@ class BasePipeline:
 
     def with_estimator(self, estimator):
         complete_pipeline = deepcopy(self.pipe)
-        complete_pipeline.steps.append(('to_dense', DenseTransformer()))
+        # complete_pipeline.steps.append(('to_dense', DenseTransformer()))
         complete_pipeline.steps.append(('estimator', estimator))
         return complete_pipeline
 
@@ -66,6 +66,7 @@ class AutomatedPipeline(BasePipeline):
 
         self.pipe = Pipeline([
             ('preprocessing', transformers),
+            ('to_dense', DenseTransformer()),
             ('scaler', StandardScaler())])
 
 
