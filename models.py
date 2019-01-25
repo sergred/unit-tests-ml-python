@@ -68,7 +68,7 @@ class SVM(Model):
         from sklearn import svm
         self.dump = pickle.dumps(
             svm.SVC(kernel=kernel, decision_function_shape='ovr',
-                    max_iter=2400))
+                    max_iter=2400, probability=True))
         self.name = 'svm'
         self.save_path = "models/%s.pkl" % (self.name, )
 
@@ -76,7 +76,8 @@ class SVM(Model):
 class LinearSVM(Model):
     def __init__(self):
         from sklearn import svm
-        self.dump = pickle.dumps(svm.LinearSVC(max_iter=2400))
+        self.dump = pickle.dumps(
+            svm.LinearSVC(max_iter=2400, probability=True))
         self.name = "lsvm"
         self.save_path = "models/%s.pkl" % (self.name, )
 

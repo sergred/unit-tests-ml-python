@@ -1,0 +1,191 @@
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=None,
+            max_features=None, max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, presort=False, random_state=0,
+            splitter='best'), 'mask': (0, 0, 1, 0, 0), 'testset_size': 1000}
+Validation : perf score = 0.5859
+Test       : perf score = 0.7900
+MetaClassifier(Model(dtree), Regressor(linreg))
+Evaluation : distance metric = 0.0248
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=None,
+            max_features=None, max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, presort=False, random_state=0,
+            splitter='best'), 'mask': (0, 0, 0, 1, 0), 'testset_size': 1000}
+Validation : perf score = 0.5859
+Test       : perf score = 0.7900
+MetaClassifier(Model(dtree), Regressor(linreg))
+Evaluation : distance metric = 0.0503
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=None,
+            max_features=None, max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, presort=False, random_state=0,
+            splitter='best'), 'mask': (0, 0, 0, 0, 1), 'testset_size': 1000}
+Validation : perf score = 0.5859
+Test       : perf score = 0.7900
+MetaClassifier(Model(dtree), Regressor(linreg))
+Evaluation : distance metric = 0.0207
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': DecisionTreeClassifier(class_weight=None, criterion='gini', max_depth=None,
+            max_features=None, max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, presort=False, random_state=0,
+            splitter='best'), 'mask': (0, 2, 0, 0, 1), 'testset_size': 1000}
+Validation : perf score = 0.5859
+Test       : perf score = 0.7900
+MetaClassifier(Model(dtree), Regressor(linreg))
+Evaluation : distance metric = 0.0268
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
+            max_depth=None, max_features='auto', max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, n_estimators=40, n_jobs=None,
+            oob_score=False, random_state=None, verbose=0,
+            warm_start=False), 'mask': (0, 0, 1, 0, 0), 'testset_size': 1000}
+Validation : perf score = 0.6768
+Test       : perf score = 0.7400
+MetaClassifier(Model(rfc), Regressor(linreg))
+Evaluation : distance metric = 0.0334
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
+            max_depth=None, max_features='auto', max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, n_estimators=40, n_jobs=None,
+            oob_score=False, random_state=None, verbose=0,
+            warm_start=False), 'mask': (0, 0, 0, 1, 0), 'testset_size': 1000}
+Validation : perf score = 0.6768
+Test       : perf score = 0.7400
+MetaClassifier(Model(rfc), Regressor(linreg))
+Evaluation : distance metric = 0.0264
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
+            max_depth=None, max_features='auto', max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, n_estimators=40, n_jobs=None,
+            oob_score=False, random_state=None, verbose=0,
+            warm_start=False), 'mask': (0, 0, 0, 0, 1), 'testset_size': 1000}
+Validation : perf score = 0.6768
+Test       : perf score = 0.7400
+MetaClassifier(Model(rfc), Regressor(linreg))
+Evaluation : distance metric = 0.0302
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
+            max_depth=None, max_features='auto', max_leaf_nodes=None,
+            min_impurity_decrease=0.0, min_impurity_split=None,
+            min_samples_leaf=1, min_samples_split=2,
+            min_weight_fraction_leaf=0.0, n_estimators=40, n_jobs=None,
+            oob_score=False, random_state=None, verbose=0,
+            warm_start=False), 'mask': (0, 2, 0, 0, 1), 'testset_size': 1000}
+Validation : perf score = 0.6768
+Test       : perf score = 0.7400
+MetaClassifier(Model(rfc), Regressor(linreg))
+Evaluation : distance metric = 0.0237
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': ExtraTreesClassifier(bootstrap=False, class_weight=None, criterion='gini',
+           max_depth=None, max_features='auto', max_leaf_nodes=None,
+           min_impurity_decrease=0.0, min_impurity_split=None,
+           min_samples_leaf=1, min_samples_split=2,
+           min_weight_fraction_leaf=0.0, n_estimators=40, n_jobs=None,
+           oob_score=False, random_state=0, verbose=0, warm_start=False), 'mask': (0, 0, 1, 0, 0), 'testset_size': 1000}
+Validation : perf score = 0.6465
+Test       : perf score = 0.7600
+MetaClassifier(Model(ertc), Regressor(linreg))
+Evaluation : distance metric = 0.0180
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': ExtraTreesClassifier(bootstrap=False, class_weight=None, criterion='gini',
+           max_depth=None, max_features='auto', max_leaf_nodes=None,
+           min_impurity_decrease=0.0, min_impurity_split=None,
+           min_samples_leaf=1, min_samples_split=2,
+           min_weight_fraction_leaf=0.0, n_estimators=40, n_jobs=None,
+           oob_score=False, random_state=0, verbose=0, warm_start=False), 'mask': (0, 0, 0, 1, 0), 'testset_size': 1000}
+Validation : perf score = 0.6465
+Test       : perf score = 0.7600
+MetaClassifier(Model(ertc), Regressor(linreg))
+Evaluation : distance metric = 0.0269
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': ExtraTreesClassifier(bootstrap=False, class_weight=None, criterion='gini',
+           max_depth=None, max_features='auto', max_leaf_nodes=None,
+           min_impurity_decrease=0.0, min_impurity_split=None,
+           min_samples_leaf=1, min_samples_split=2,
+           min_weight_fraction_leaf=0.0, n_estimators=40, n_jobs=None,
+           oob_score=False, random_state=0, verbose=0, warm_start=False), 'mask': (0, 0, 0, 0, 1), 'testset_size': 1000}
+Validation : perf score = 0.6465
+Test       : perf score = 0.7600
+MetaClassifier(Model(ertc), Regressor(linreg))
+Evaluation : distance metric = 0.0245
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': ExtraTreesClassifier(bootstrap=False, class_weight=None, criterion='gini',
+           max_depth=None, max_features='auto', max_leaf_nodes=None,
+           min_impurity_decrease=0.0, min_impurity_split=None,
+           min_samples_leaf=1, min_samples_split=2,
+           min_weight_fraction_leaf=0.0, n_estimators=40, n_jobs=None,
+           oob_score=False, random_state=0, verbose=0, warm_start=False), 'mask': (0, 2, 0, 0, 1), 'testset_size': 1000}
+Validation : perf score = 0.6465
+Test       : perf score = 0.7600
+MetaClassifier(Model(ertc), Regressor(linreg))
+Evaluation : distance metric = 0.0205
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
+       colsample_bytree=1, gamma=0, learning_rate=0.1, max_delta_step=0,
+       max_depth=3, min_child_weight=1, missing=nan, n_estimators=100,
+       n_jobs=1, nthread=None, objctive='multi:softmax',
+       objective='binary:logistic', random_state=0, reg_alpha=0,
+       reg_lambda=1, scale_pos_weight=1, seed=None, silent=True,
+       subsample=1), 'mask': (0, 0, 1, 0, 0), 'testset_size': 1000}
+Validation : perf score = 0.6566
+Test       : perf score = 0.7400
+MetaClassifier(Model(xgb), Regressor(linreg))
+Evaluation : distance metric = 827.6648
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
+       colsample_bytree=1, gamma=0, learning_rate=0.1, max_delta_step=0,
+       max_depth=3, min_child_weight=1, missing=nan, n_estimators=100,
+       n_jobs=1, nthread=None, objctive='multi:softmax',
+       objective='binary:logistic', random_state=0, reg_alpha=0,
+       reg_lambda=1, scale_pos_weight=1, seed=None, silent=True,
+       subsample=1), 'mask': (0, 0, 0, 1, 0), 'testset_size': 1000}
+Validation : perf score = 0.6566
+Test       : perf score = 0.7400
+MetaClassifier(Model(xgb), Regressor(linreg))
+Evaluation : distance metric = 22199.4530
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
+       colsample_bytree=1, gamma=0, learning_rate=0.1, max_delta_step=0,
+       max_depth=3, min_child_weight=1, missing=nan, n_estimators=100,
+       n_jobs=1, nthread=None, objctive='multi:softmax',
+       objective='binary:logistic', random_state=0, reg_alpha=0,
+       reg_lambda=1, scale_pos_weight=1, seed=None, silent=True,
+       subsample=1), 'mask': (0, 0, 0, 0, 1), 'testset_size': 1000}
+Validation : perf score = 0.6566
+Test       : perf score = 0.7400
+MetaClassifier(Model(xgb), Regressor(linreg))
+Evaluation : distance metric = 1437.5757
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': XGBClassifier(base_score=0.5, booster='gbtree', colsample_bylevel=1,
+       colsample_bytree=1, gamma=0, learning_rate=0.1, max_delta_step=0,
+       max_depth=3, min_child_weight=1, missing=nan, n_estimators=100,
+       n_jobs=1, nthread=None, objctive='multi:softmax',
+       objective='binary:logistic', random_state=0, reg_alpha=0,
+       reg_lambda=1, scale_pos_weight=1, seed=None, silent=True,
+       subsample=1), 'mask': (0, 2, 0, 0, 1), 'testset_size': 1000}
+Validation : perf score = 0.6566
+Test       : perf score = 0.7400
+MetaClassifier(Model(xgb), Regressor(linreg))
+Evaluation : distance metric = 359.6415
+
+HyperParam : {'train_ratio': 0.7, 'val_ratio': 0.1, 'test_ratio': 0.1, 'target_ratio': 0.1, 'random_state': 0, 'row_fraction': 0.01, 'classifier': SVC(C=1.0, cache_size=200, class_weight=None, coef0=0.0,
+  decision_function_shape='ovr', degree=3, gamma='auto_deprecated',
+  kernel='poly', max_iter=2400, probability=False, random_state=None,
+  shrinking=True, tol=0.001, verbose=False), 'mask': (0, 0, 1, 0, 0), 'testset_size': 1000}
+Validation : perf score = 0.6566
+Test       : perf score = 0.7100
+MetaClassifier(Model(svm), Regressor(linreg))

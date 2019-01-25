@@ -244,24 +244,26 @@ def main():
 
             # prepare a dataset based on X_test and repeated error generation
             # NB: returns a python list, not a numpy array or pandas dataframe
-            features_X_test = error_gen_strat.on(X_test, state)
+            list_of_corrupted_X_test = error_gen_strat.on(X_test, state)
 
-            # try:
-            meta_classifier = MetaClassifier(model, LinearRegression())
-            print(str(meta_classifier))
-            meta_classifier.fit(features_X_test, y_test)
+            try:
+                meta_classifier = MetaClassifier(model, LinearRegression())
+                print(str(meta_classifier))
+                meta_classifier.fit(list_of_corrupted_X_test, y_test)
 
-            # Meta Classifier Evaluation Procedure
-            X_eval = error_gen_strat.on(X_target, state)
-            predicted_scores = meta_classifier.predict(X_eval)
-            actual_scores = [performance_metric(y_target, model.predict(x))
-                             for x in X_eval]
-            result = distance_metric(actual_scores, predicted_scores)
+                # Meta Classifier Evaluation Procedure
+                list_of_corrupted_X_target = error_gen_strat.on(
+                    X_target, state)
+                predicted_scores = meta_classifier.predict(
+                    list_of_corrupted_X_target)
+                actual_scores = [performance_metric(y_target, model.predict(x))
+                                 for x in list_of_corrupted_X_target]
+                result = distance_metric(actual_scores, predicted_scores)
 
-            print("Evaluation : distance metric = %.4f" % round(result, 4))
-            print()
-            # except Exception as e:
-                # print("\nException  : %s\n%s\n" % (str(error_gen_strat), e))
+                print("Evaluation : distance metric = %.4f" % round(result, 4))
+                print()
+            except Exception as e:
+                print("\nException  : %s\n%s\n" % (str(error_gen_strat), e))
 
 
 if __name__ == "__main__":
