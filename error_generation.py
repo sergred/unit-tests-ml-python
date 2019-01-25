@@ -3,9 +3,10 @@
 
 """"""
 
-from selection import RandomSelector, PairSelector
 from copy import deepcopy
 import numpy as np
+
+from selection import RandomSelector, PairSelector
 
 
 class ErrorGenerator:
@@ -159,7 +160,6 @@ class SwapFields(ErrorGenerator):
 
     def apply(self, function, data, cell_ids):
         df = deepcopy(data)
-        # print(cell_ids.items())
         ((lc, lr), (rc, rr)) = cell_ids.items()
         # TODO: swap cols
         (df.iloc[lr, lc], df.iloc[rr, rc]) = (df.iloc[rr, rc].values,

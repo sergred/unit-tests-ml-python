@@ -91,6 +91,14 @@ class KNN(Model):
         self.save_path = "models/%s.pkl" % (self.name, )
 
 
+class LinearRegression(Model):
+    def __init__(self):
+        from sklearn.linear_model import LinearRegression
+        self.dump = pickle.dumps(LinearRegression())
+        self.name = "linreg"
+        self.save_path = "models/%s.pkl" % (self.name, )
+
+
 class LogRegression(Model):
     def __init__(self):
         from sklearn.linear_model import LogisticRegression

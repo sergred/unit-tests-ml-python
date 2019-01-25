@@ -87,8 +87,9 @@ class PairSelector(Selector):
             list_of_cols = list(data.columns)
             if columns is None:
                 # random 'corrupting'
-                columns = np.random.choice(range(cols), 2, replace=False)
-            elif isinstance(columns, str):
+                # columns = np.random.choice(range(cols), 2, replace=False)
+                columns = 'string'
+            if isinstance(columns, str):
                 modes = ['string', 'numeric']
                 assert columns in modes, mes().wrong_value % columns
                 profiles = DataFrameProfiler().on(data).profiles
@@ -101,7 +102,7 @@ class PairSelector(Selector):
             else:
                 assert isinstance(columns, list), mes().wrong_value % columns
                 columns = [list_of_cols.index(col) for col in columns]
-                columns = np.random.choice(columns, 2, replace=False)
+            columns = np.random.choice(columns, 2, replace=False)
             tmp = dict({})
             rows = np.random.choice(range(rows),
                                     int(np.ceil(self.row_fraction*rows)),

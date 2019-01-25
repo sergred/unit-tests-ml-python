@@ -37,7 +37,8 @@ class AutomatedPipeline(BasePipeline):
 
     def run(self):
         num_ord_features = [col.column_name for col in self.profile
-                            if col.dtype in [DataType.INTEGER, DataType.FLOAT]]
+                            if col.dtype in [DataType.INTEGER, DataType.FLOAT]
+                            and col.scale == DataScale.ORDINAL]
         num_cat_features = [col.column_name for col in self.profile
                             if col.dtype in [DataType.INTEGER, DataType.FLOAT]
                             and col.scale == DataScale.NOMINAL]

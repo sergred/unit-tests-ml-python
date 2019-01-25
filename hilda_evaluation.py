@@ -13,7 +13,7 @@ import os
 
 from models import DecisionTree, RandomForest, ExtremelyRandomizedTrees
 from models import LinearSVM, SVM, KNN, GausNB, BaggingRandomForest
-from models import LogRegression, MLPC, XGB
+from models import LinearRegression, LogRegression, MLPC, XGB
 from error_generation import ImplicitMissingValues, ExplicitMissingValues
 from error_generation import Anomalies, Typos, SwapFields
 from profilers import DataFrameProfiler
@@ -30,34 +30,40 @@ class MetaClassifier:
         self.funcs = [np.min, np.max, np.mean, np.std,
                       self.quant25, self.quant50, self.quant75]
 
-    def quant25(self, x): return np.quantile(x, 25)
+    def __repr__(self):
+        return self.__str__()
 
-    def quant50(self, x): return np.quantile(x, 50)
+    def __str__(self):
+        return ("MetaClassifier(Model(%s), Regressor(%s))" %
+                (self.ml_pipeline.steps[-1][-1].name, self.regressor.name))
 
-    def quant75(self, x): return np.quantile(x, 75)
+    def quant25(self, x): return np.percentile(x, 25)
+
+    def quant50(self, x): return np.percentile(x, 50)
+
+    def quant75(self, x): return np.percentile(x, 75)
 
     def stats(self, data):
         for column in data.T:
             for foo in self.funcs:
                 yield foo(column)
 
-    def train(self, X_train, y_train):
-        features_X_train = [self.ml_pipeline.predict_proba(example)
-                            for example in X_train]
-        meta_X_train = np.array([self.stats(example)
-                                 for example in features_X_train])
-        meta_y_train = performance_metric(
-            y_train, self.ml_pipeline.predict(X_train))
-        self.regressor.fit(meta_X_train, meta_y_train)
+    def transform(self, X):
+        features_X = [self.ml_pipeline.predict_proba(example) for example in X]
+        return [list(self.stats(item)) for item in features_X]
+
+    def fit(self, X_train, y_train):
+        meta_y_train = [
+            performance_metric(y_train, self.ml_pipeline.predict(x))
+            for x in X_train]
+        self.regressor.fit(self.transform(X_train), meta_y_train)
         return self
+
+    def predict(self, X_test):
+        return self.regressor.predict(self.transform(X_test))
 
     # def __getattr__(self, name):
     #     return getattr(self.regressor, name)
-
-
-class Detector:
-    def __init__(self):
-        pass
 
 
 class BlackBox:
@@ -96,6 +102,15 @@ class ErrorGenerationStrategy:
     def __init__(self, error_generators, hyperparams):
         self.generators = error_generators
         self.hp = hyperparams
+
+    def __repr__(self):
+        return self.__str__()
+
+    def __str__(self):
+        factor = np.sum(np.array(self.hp['mask']) > 0)
+        gens = [self.generators[i].name
+                for i in np.argsort(self.hp['mask'])[::-1][:factor]]
+        return "ErrorGenStrategy(%s)" % (", ".join(gens),)
 
     def on(self, data, hp):
         return self.run(data, hp)
@@ -144,6 +159,11 @@ def split_dataset(data, target_feature, hp):
 
 def performance_metric(*_):
     return accuracy_score(*_)
+
+
+def distance_metric(X_actual, X_predicted):
+    # MSE
+    return np.sqrt(np.square(X_actual - X_predicted).mean())
 
 
 def main():
@@ -196,6 +216,7 @@ def main():
         data = pd.read_csv(os.path.join(path, 'data', filepath))
 
         for state in HyperParameterHolder(hyperparams):
+            print("HyperParam : %s" % str(state))
             # Dataset Split
             (X_train, y_train, X_val, y_val,
              X_test, y_test, X_target, y_target) = split_dataset(
@@ -209,30 +230,38 @@ def main():
                 # ML Pipeline Validation Procedures
                 predicted = model.predict(X_val)
                 score = performance_metric(y_val, predicted)
-                print("%.4f" % round(score, 4))
+                print("Validation : perf score = %.4f" % round(score, 4))
                 tuning_done = True
 
             # ML Pipeline final performance score
             predicted = model.predict(X_test)
             score = performance_metric(y_test, predicted)
-            print("ML Pipeline final perf score: %.4f" % round(score, 4))
+            print("Test       : perf score = %.4f" % round(score, 4))
 
             # Meta Classifier Training Procedure
             error_gen_strat = ErrorGenerationStrategy(error_generators, state)
             # TODO: so far, X_test/y_test is used for training
 
             # prepare a dataset based on X_test and repeated error generation
+            # NB: returns a python list, not a numpy array or pandas dataframe
             features_X_test = error_gen_strat.on(X_test, state)
 
-            meta_classifier = MetaClassifier(model, GausNB())
-            meta_classifier.train(features_X_test, y_test)
+            # try:
+            meta_classifier = MetaClassifier(model, LinearRegression())
+            print(str(meta_classifier))
+            meta_classifier.fit(features_X_test, y_test)
 
             # Meta Classifier Evaluation Procedure
-            X_eval = error_gen_strat.on(X_target)
-            predicted = meta_classifier.predict(X_eval)
-            results = performance_metric(y_target, predicted)
+            X_eval = error_gen_strat.on(X_target, state)
+            predicted_scores = meta_classifier.predict(X_eval)
+            actual_scores = [performance_metric(y_target, model.predict(x))
+                             for x in X_eval]
+            result = distance_metric(actual_scores, predicted_scores)
 
-            print(results)
+            print("Evaluation : distance metric = %.4f" % round(result, 4))
+            print()
+            # except Exception as e:
+                # print("\nException  : %s\n%s\n" % (str(error_gen_strat), e))
 
 
 if __name__ == "__main__":
