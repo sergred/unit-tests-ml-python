@@ -3,8 +3,10 @@
 
 """"""
 
+from sklearn.metrics import mean_squared_error, mean_absolute_error
 from sklearn.model_selection import train_test_split as split
 from sklearn.metrics import accuracy_score
+from matplotlib import pyplot as plt
 from copy import deepcopy
 import pandas as pd
 import numpy as np
@@ -119,19 +121,18 @@ class ErrorGenerationStrategy:
         tmp = deepcopy(data)
         for i, idx in enumerate(np.argsort(hp['mask'])[::-1][:len(rs)]):
             np.random.seed(rs[i])
-            tmp = self.generators[idx].on(tmp)
+            tmp = self.generators[idx].on(tmp, row_fraction=hp['row_fraction'])
+        np.random.seed(0)
         return tmp
 
     def run(self, data, hp):
-        factor = np.sum(np.array(hp['mask']) > 0)
-        samples = factor * hp['testset_size']
-        random_states = np.random.random_integers(1, 1000, samples)
-        tmp = []
-        for i in range(hp['testset_size']):
-            tmp.append(self.strategy(data, hp,
-                                     random_states[factor*i: factor*(i+1)]))
-        np.random.seed(0)
-        return tmp
+        number_of_err_gens = np.sum(np.array(hp['mask']) > 0)
+        number_of_samples = number_of_err_gens * hp['testset_size']
+        random_states = np.random.random_integers(1, 1000, number_of_samples)
+        return [self.strategy(data, hp,
+                              random_states[number_of_err_gens*i:
+                                            number_of_err_gens*(i+1)])
+                for i in range(hp['testset_size'])]
 
 
 def split_dataset(data, target_feature, hp):
@@ -162,8 +163,7 @@ def performance_metric(*_):
 
 
 def distance_metric(X_actual, X_predicted):
-    # MSE
-    return np.sqrt(np.square(X_actual - X_predicted).mean())
+    return mean_squared_error(X_actual, X_predicted)
 
 
 def main():
@@ -172,17 +172,17 @@ def main():
     path = get_resource_path()
 
     classifiers = [
-        DecisionTree(),
-        RandomForest(size=40),
-        ExtremelyRandomizedTrees(size=40),
-        XGB(),
-        SVM(),
-        LinearSVM(),
-        KNN(n_neighbors=7),
+        # DecisionTree(),
+        # RandomForest(size=40),
+        # ExtremelyRandomizedTrees(size=40),
+        # XGB(),
+        # SVM(),
+        # LinearSVM(),
+        # KNN(n_neighbors=7),
         LogRegression(),
-        GausNB(),
-        BaggingRandomForest(size=40),
-        MLPC(input_size=[16, 32, 16, 8])
+        # GausNB(),
+        # BaggingRandomForest(size=40),
+        # MLPC(input_size=[16, 32, 16, 8])
     ]
 
     error_generators = [
@@ -201,12 +201,14 @@ def main():
         'test_ratio': .1,
         'target_ratio': .1,
         'random_state': [0],
-        'row_fraction': [0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.8],
+        # 'row_fraction': [0.01, 0.05, 0.1, 0.2, 0.3, 0.5, 0.8],
+        'row_fraction': [0.2],
         'classifier': classifiers,
         # Ordering of error generators
-        'mask': [(0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1),
-                 (0, 2, 0, 0, 1)],
-        'testset_size': 1000
+        # 'mask': [(0, 0, 1, 0, 0), (0, 0, 0, 1, 0), (0, 0, 0, 0, 1),
+        #          (0, 2, 0, 0, 1)],
+        'mask': [(0, 0, 0, 1, 0)],
+        'testset_size': 100
     }
 
     datasets = pd.read_csv(os.path.join(path, 'datasets.csv'))
@@ -230,13 +232,13 @@ def main():
                 # ML Pipeline Validation Procedures
                 predicted = model.predict(X_val)
                 score = performance_metric(y_val, predicted)
-                print("Validation : perf score = %.4f" % round(score, 4))
+                print("Validation : accuracy = %.4f" % round(score, 4))
                 tuning_done = True
 
             # ML Pipeline final performance score
             predicted = model.predict(X_test)
             score = performance_metric(y_test, predicted)
-            print("Test       : perf score = %.4f" % round(score, 4))
+            print("Test       : accuracy = %.4f" % round(score, 4))
 
             # Meta Classifier Training Procedure
             error_gen_strat = ErrorGenerationStrategy(error_generators, state)
@@ -258,6 +260,11 @@ def main():
                     list_of_corrupted_X_target)
                 actual_scores = [performance_metric(y_target, model.predict(x))
                                  for x in list_of_corrupted_X_target]
+                plt.plot(range(len(actual_scores)), actual_scores, 'g^')
+                plt.plot(range(len(predicted_scores)), predicted_scores, 'ro')
+                plt.gca().legend(('ground truth', 'predicted scores'))
+                plt.grid(True)
+                plt.show()
                 result = distance_metric(actual_scores, predicted_scores)
 
                 print("Evaluation : distance metric = %.4f" % round(result, 4))

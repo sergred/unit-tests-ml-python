@@ -125,6 +125,17 @@ class PairSelector(Selector):
         return getattr(self.instance, name)
 
 
+class PartitionSelector(Selector):
+    def __init__(self, row_fraction=.2):
+        self.row_fraction = row_fraction
+
+    def on(self, data, where):
+        return self.run(data, where)
+
+    def run(self, data, where):
+        pass
+
+
 def main():
     """
     """

@@ -172,6 +172,21 @@ class SwapFields(ErrorGenerator):
             row_fraction=row_fraction).on(data, columns))
 
 
+class MyErrorGenerator(ErrorGenerator):
+    def __init__(self):
+        ErrorGenerator.__init__(self)
+        self.name = 'partitioned data corruption'
+
+    def on(self, data):
+        return self.run(data)
+
+    def apply(self, ):
+        pass
+
+    def run(self, data):
+        pass
+
+
 def main():
     """
     """
