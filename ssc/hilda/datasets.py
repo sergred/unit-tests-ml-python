@@ -2,12 +2,48 @@ import pandas as pd
 import numpy as np
 
 
+class TrollingDataset:
+
+    def __init__(self):
+        self.df = pd.read_csv('resources/data/trolls/data.tsv', sep='\t')
+        self.categorical_columns = []
+        self.numerical_columns = []
+        self.textual_columns = ['content']
+
+    def name(self):
+        return "trolling_tweets"
+
+    def labels_from(self, dataframe):
+        return np.array(dataframe.label == 1)
+
+
+class BalancedTrollingDataset:
+
+    def __init__(self):
+        complete_data = pd.read_csv('resources/data/trolls/data.tsv', sep='\t')
+
+        trolling = complete_data[complete_data.label == 1]
+        not_trolling = complete_data[complete_data.label != 1].sample(len(trolling))
+
+        self.categorical_columns = []
+        self.numerical_columns = []
+        self.textual_columns = ['content']
+        self.df = pd.concat([trolling, not_trolling])
+
+    def name(self):
+        return "trolling_tweets_balanced"
+
+    def labels_from(self, dataframe):
+        return np.array(dataframe.label == 1)
+
+
 class AdultDataset:
 
     def __init__(self):
         self.df = pd.read_csv('resources/data/adult/adult.csv')
         self.categorical_columns = ['workclass', 'occupation', 'marital_status', 'education']
         self.numerical_columns = ['hours_per_week', 'age']
+        self.textual_columns = []
 
     def name(self):
         return "adult_income"
@@ -24,6 +60,7 @@ class BalancedAdultDataset:
         not_rich = complete_data[complete_data['class'] != '>50K'].sample(len(rich))
         self.categorical_columns = ['workclass', 'occupation', 'marital_status', 'education']
         self.numerical_columns = ['hours_per_week', 'age']
+        self.textual_columns = []
         self.df = pd.concat([rich, not_rich])
 
     def name(self):
@@ -39,6 +76,7 @@ class BankmarketingDataset:
         self.df = pd.read_csv('resources/data/bankmarketing/bank-full.csv', sep=';')
         self.categorical_columns = ['job', 'marital', 'housing', 'contact', 'default']
         self.numerical_columns = ['balance', 'age']
+        self.textual_columns = []
 
     def name(self):
         return "bank_marketing"
@@ -56,6 +94,7 @@ class BalancedBankmarketingDataset:
 
         self.categorical_columns = ['job', 'marital', 'housing', 'contact', 'default']
         self.numerical_columns = ['balance', 'age']
+        self.textual_columns = []
         self.df = pd.concat([subscribed, subscribed_not])
 
     def name(self):
@@ -74,6 +113,7 @@ class CardioDataset:
 
         self.categorical_columns = ['gender', 'cholesterol', 'gluc', 'smoke', 'alco', 'active']
         self.numerical_columns = ['age_in_years', 'ap_hi', 'ap_lo', 'bmi']
+        self.textual_columns = []
         self.df = data
 
     def name(self):

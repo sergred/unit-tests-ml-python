@@ -106,4 +106,15 @@ def evaluate_regressor(target_data, y_target, perturbations_to_apply, model, met
     plt.tight_layout()
     plt.gcf().savefig(plot_file, dpi=300)
 
+    plt.clf()
+    plt.cla()
+    plt.close()
+
+    results_file = 'ssc/results/' + "__".join([dataset_name, perturbations_name, learner.name, learner.scoring]) + ".tsv"
+
+    with open(results_file, 'w') as the_file:
+        the_file.write('y_true\ty_pred\n')
+        for true_score, predicted_score in zip(true_scores, predicted_scores):
+            the_file.write('%s\t%s\n' % (true_score, predicted_score[0]))
+
     return mse, mae, plot_file
