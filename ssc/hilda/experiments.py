@@ -1,4 +1,5 @@
-from hilda import learners, meta_regressors
+from meta_regressors import train_random_forest_regressor, evaluate_regressor
+from learners import *
 
 
 def reapply_perturbations(dataset, learner, perturbations_for_training,
@@ -22,11 +23,11 @@ def reapply_perturbations(dataset, learner, perturbations_for_training,
     print(learner.scoring, "on target data: ", score_on_noncorrupted_target_data)
 
     print("\nTraining meta regressor on perturbed test data.")
-    meta_regressor = meta_regressors.train_random_forest_regressor(test_data, y_test, perturbations_for_training, model, learner)
+    meta_regressor = train_random_forest_regressor(test_data, y_test, perturbations_for_training, model, learner)
 
     print("\nEvaluating meta regressor on perturbed target data.")
 
-    mse, mae, plot_file = meta_regressors.evaluate_regressor(target_data, y_target, perturbations_for_evaluation,
+    mse, mae, plot_file = evaluate_regressor(target_data, y_target, perturbations_for_evaluation,
                                                              model, meta_regressor, learner, dataset.name(),
                                                              perturbations_name)
 

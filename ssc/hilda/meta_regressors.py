@@ -1,10 +1,10 @@
-import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-
-import matplotlib.pyplot as plt
+from matplotlib import pyplot as plt
+import numpy as np
+import os
 
 
 def percentiles_of_probas(predictions):
@@ -100,7 +100,8 @@ def evaluate_regressor(target_data, y_target, perturbations_to_apply, model, met
     plt.legend(['perfect', 'predicted'], fontsize=18)
     plt.gcf().set_size_inches(6, 5)
 
-    plot_file = 'ssc/figures/' + "__".join([dataset_name, perturbations_name, learner.name, learner.scoring]) + ".pdf"
+    plot_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                        '../figures/' + "__".join([dataset_name, perturbations_name, learner.name, learner.scoring]) + '.pdf')
 
     print("Writing plot to " + plot_file)
     plt.tight_layout()
