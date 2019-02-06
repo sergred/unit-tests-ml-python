@@ -1,1 +1,1 @@
-__all__ = ['datasets', 'learners', 'perturbations.py', 'meta_regressors', 'experiments']
+__all__ = ['datasets', 'learners', 'perturbations', 'meta_regressors', 'experiments']

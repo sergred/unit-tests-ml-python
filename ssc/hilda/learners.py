@@ -15,7 +15,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-class Learner:
+class Learner(object):
 
     def __init__(self, scoring):
         self.scoring = scoring
