@@ -4,6 +4,7 @@
 """"""
 
 # from sklearn.compose import ColumnTransformer
+from sklearn.model_selection import GridSearchCV as gs
 from sklearn.pipeline import Pipeline as p
 from collections import defaultdict
 from enum import Enum
@@ -136,7 +137,11 @@ class SklearnPipelineProfiler(Profiler):
         return self.run(pipeline)
 
     def run(self, pipeline):
-        assert isinstance(pipeline, p), "sklearn.pipeline.Pipeline required"
+        print(type(pipeline))
+        # assert isinstance(pipeline, p), "sklearn.pipeline.Pipeline required"
+        if isinstance(pipeline, gs):
+            pipeline = pipeline.estimator
+            print(type(pipeline))
         # print(pipeline)
         for step in pipeline.steps:
             name, func = step

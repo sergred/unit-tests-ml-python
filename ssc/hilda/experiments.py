@@ -35,4 +35,4 @@ def reapply_perturbations(dataset, learner, perturbations_for_training,
                           str(score_on_noncorrupted_test_data), str(score_on_noncorrupted_target_data),
                           learner.name, learner.scoring, perturbations_name, str(mse), str(mae), plot_file])
     print(log_line)
-    return log_line
+    return log_line, model

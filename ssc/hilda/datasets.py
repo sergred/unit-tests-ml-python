@@ -6,9 +6,9 @@ import os
 class AdultDataset:
 
     def __init__(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
-                            '..resources/data/adult/adult.csv')
-        self.df = pd.read_csv(path)
+        self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            '../../resources/data/adult/adult.csv')
+        self.df = pd.read_csv(self.path)
         self.categorical_columns = ['workclass', 'occupation', 'marital_status', 'education']
         self.numerical_columns = ['hours_per_week', 'age']
 
@@ -22,9 +22,9 @@ class AdultDataset:
 class BalancedAdultDataset:
 
     def __init__(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+        self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             '../../resources/data/adult/adult.csv')
-        complete_data = pd.read_csv(path)
+        complete_data = pd.read_csv(self.path)
         rich = complete_data[complete_data['class'] == '>50K']
         not_rich = complete_data[complete_data['class'] != '>50K'].sample(len(rich))
         self.categorical_columns = ['workclass', 'occupation', 'marital_status', 'education']
@@ -41,9 +41,9 @@ class BalancedAdultDataset:
 class BankmarketingDataset:
 
     def __init__(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+        self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             '../../resources/data/bankmarketing/bank-full.csv')
-        self.df = pd.read_csv(path, sep=';')
+        self.df = pd.read_csv(self.path, sep=';')
         self.categorical_columns = ['job', 'marital', 'housing', 'contact', 'default']
         self.numerical_columns = ['balance', 'age']
 
@@ -57,9 +57,9 @@ class BankmarketingDataset:
 class BalancedBankmarketingDataset:
 
     def __init__(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+        self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             '../../resources/data/bankmarketing/bank-full.csv')
-        complete_data = pd.read_csv(path, sep=';')
+        complete_data = pd.read_csv(self.path, sep=';')
         subscribed = complete_data[complete_data.y == 'yes']
         subscribed_not = complete_data[complete_data.y != 'yes'].sample(len(subscribed))
 
@@ -77,9 +77,9 @@ class BalancedBankmarketingDataset:
 class CardioDataset:
 
     def __init__(self):
-        path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+        self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             '../../resources/data/cardio/cardio_train.csv')
-        data = pd.read_csv(path, sep=';')
+        data = pd.read_csv(self.path, sep=';')
         data['bmi'] = data['weight'] / (.01 * data['height']) ** 2
         data['age_in_years'] = data['age'] / 365
 

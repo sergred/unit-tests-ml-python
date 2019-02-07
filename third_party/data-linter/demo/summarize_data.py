@@ -20,14 +20,30 @@ Facets must be installed. See: https://github.com/PAIR-code/facets
 In particular, see the Python code here:
 https://github.com/PAIR-code/facets/tree/master/facets_overview/python
 """
+import argparse
+
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                             '../../facets/facets_overview/python'))
+
 from feature_statistics_generator import ProtoFromTfRecordFiles
 
-DATASET_PATH = "/tmp/adult.tfrecords"
-OUTPUT_PATH = "/tmp/adult_summary.bin"
-DATASET_NAME = "uci_census"
+
+# Flags.
+parser = argparse.ArgumentParser()
+parser.add_argument('--dataset_path',
+                    help='path to directory containing your '
+                    'TFRecord-encoded dataset.')
+parser.add_argument('--stats_path',
+                    help='path where stats are stored.')
+parser.add_argument('--dataset_name',
+                    help='dataset name.',
+                    default='/tmp/datalinter/results/lint_results.bin')
+args = parser.parse_args()
 
 result = ProtoFromTfRecordFiles(
-    [{"name": DATASET_NAME, "path": DATASET_PATH}],
+    [{"name": args.dataset_name, "path": args.dataset_path}],
     max_entries=1000000)
-with open(OUTPUT_PATH, "w") as fout:
-  fout.write(result.SerializeToString())
+with open(args.stats_path, "w") as fout:
+    fout.write(result.SerializeToString())
