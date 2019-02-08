@@ -19,7 +19,8 @@ def leet_perturbations():
 def run_one(dataset, learner):
     exp.reapply_perturbations(dataset, learner, leet_perturbations(), leet_perturbations(), 'hilda_adversarial')
 
-
+run_one(datasets.BalancedTrollingDataset(), learners.XgBoost('accuracy'))
+run_one(datasets.BalancedTrollingDataset(), learners.XgBoost('roc_auc'))
 run_one(datasets.BalancedTrollingDataset(), learners.LogisticRegression('accuracy'))
 run_one(datasets.BalancedTrollingDataset(), learners.DNN('accuracy'))
 run_one(datasets.TrollingDataset(), learners.LogisticRegression('roc_auc'))

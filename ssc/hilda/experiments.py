@@ -1,5 +1,4 @@
-from meta_regressors import train_random_forest_regressor, evaluate_regressor
-from learners import *
+from hilda.meta_regressors import train_random_forest_regressor, evaluate_regressor
 
 
 def reapply_perturbations(dataset, learner, perturbations_for_training,

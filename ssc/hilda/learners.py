@@ -11,6 +11,8 @@ from mlxtend.preprocessing import DenseTransformer
 import tensorflow as tf
 from tensorflow import keras
 
+import xgboost as xgb
+
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -58,8 +60,6 @@ class LogisticRegression(Learner):
             sparse_threshold = 1.0
             textual_column = dataset.textual_columns[0]
 
-        print(sparse_threshold)
-
         feature_transformation = ColumnTransformer(transformers=[
             ('categorical_features', OneHotEncoder(handle_unknown='ignore'), dataset.categorical_columns),
             ('scaled_numeric', StandardScaler(), dataset.numerical_columns),
@@ -75,6 +75,54 @@ class LogisticRegression(Learner):
         pipeline = Pipeline([
             ('features', feature_transformation),
             ('learner', SGDClassifier(max_iter=1000))])
+
+        search = GridSearchCV(pipeline, param_grid, scoring=self.scoring, cv=5, verbose=1, n_jobs=-1)
+        model = search.fit(train_data, y_train)
+
+        return model
+
+
+class XgBoost(Learner):
+
+    def __init__(self, scoring):
+        super(XgBoost, self).__init__(scoring)
+        self.name = "xgboost"
+
+    def fit(self, dataset, train_data):
+
+        y_train = dataset.labels_from(train_data)
+
+        if len(dataset.textual_columns) > 1:
+            raise Exception('Can only handle one textual column at the moment.')
+
+        sparse_threshold = 0.3
+        textual_column = []
+        if len(dataset.textual_columns) > 0:
+            sparse_threshold = 1.0
+            textual_column = dataset.textual_columns[0]
+
+        feature_transformation = ColumnTransformer(transformers=[
+            ('categorical_features', OneHotEncoder(handle_unknown='ignore'), dataset.categorical_columns),
+            ('scaled_numeric', StandardScaler(), dataset.numerical_columns),
+            ('textual_features', HashingVectorizer(ngram_range=(1, 3), n_features=100000), textual_column),
+        ], sparse_threshold=sparse_threshold)
+
+        if self.scoring == 'accuracy':
+            xg_metric = 'error'
+
+        if self.scoring == 'roc_auc':
+            xg_metric = 'auc'
+
+        param_grid = {
+            'learner__n_estimators': [5, 10],
+            'learner__max_depth': [3, 6, 10],
+            'learner__objective': ['binary:logistic'],
+            'learner__eval_metric': [xg_metric]
+        }
+
+        pipeline = Pipeline([
+            ('features', feature_transformation),
+            ('learner', xgb.XGBClassifier())])
 
         search = GridSearchCV(pipeline, param_grid, scoring=self.scoring, cv=5, verbose=1, n_jobs=-1)
         model = search.fit(train_data, y_train)
@@ -105,8 +153,6 @@ class DNN(Learner):
         if len(dataset.textual_columns) > 0:
             sparse_threshold = 0.0
             textual_column = dataset.textual_columns[0]
-
-        print(sparse_threshold)
 
         feature_transformation = ColumnTransformer(transformers=[
             ('categorical_features', OneHotEncoder(handle_unknown='ignore'), dataset.categorical_columns),
@@ -142,7 +188,5 @@ class DNN(Learner):
         }
 
         model = GridSearchCV(pipeline, param_grid, scoring=self.scoring, cv=5, verbose=2).fit(train_data, y_train)
-
-        # print(model.cv_results_)
 
         return model
