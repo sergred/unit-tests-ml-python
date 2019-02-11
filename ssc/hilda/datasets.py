@@ -6,7 +6,9 @@ import os
 class TrollingDataset:
 
     def __init__(self):
-        self.df = pd.read_csv('resources/data/trolls/data.tsv', sep='\t')
+        self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                            '../../resources/data/trolls/data.tsv')
+        self.df = pd.read_csv(self.path, sep='\t')
         self.categorical_columns = []
         self.numerical_columns = []
         self.textual_columns = ['content']
@@ -21,7 +23,9 @@ class TrollingDataset:
 class BalancedTrollingDataset:
 
     def __init__(self):
-        complete_data = pd.read_csv('resources/data/trolls/data.tsv', sep='\t')
+        self.path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                 '../../resources/data/trolls/data.tsv')
+        complete_data = pd.read_csv(self.path, sep='\t')
 
         trolling = complete_data[complete_data.label == 1]
         not_trolling = complete_data[complete_data.label != 1].sample(len(trolling))

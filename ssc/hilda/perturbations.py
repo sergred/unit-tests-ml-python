@@ -37,9 +37,10 @@ class Leetspeak:
         # we operate on a copy of the data
         df = clean_df.copy(deep=True)
 
-        for index, row in df.iterrows():
+        sampled_df = df[df[self.label_column] == self.label_value]
+        for index, row in sampled_df.iterrows():
 
-            if row[self.label_column] == self.label_value and random.random() < self.fraction:
+            if random.random() < self.fraction:
                 leet_content = row[self.column] \
                     .replace('a', '4') \
                     .replace('e', '3') \
