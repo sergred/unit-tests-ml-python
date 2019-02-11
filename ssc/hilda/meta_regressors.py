@@ -37,7 +37,7 @@ def train_random_forest_regressor(test_data, y_test, perturbations_to_apply, mod
     y = np.array(generated_training_data)[:, num_features]
 
     param_grid = {
-        'learner__n_estimators': np.arange(5,20,5),
+        'learner__n_estimators': np.arange(5, 20, 5),
         'learner__criterion': ['mae']
     }
 
@@ -111,7 +111,12 @@ def evaluate_regressor(target_data, y_target, perturbations_to_apply, model, met
     plt.cla()
     plt.close()
 
-    results_file = 'ssc/results/' + "__".join([dataset_name, perturbations_name, learner.name, learner.scoring]) + ".tsv"
+    results_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                '../results/'
+                                + "__".join([dataset_name, perturbations_name,
+                                             learner.name, learner.scoring])
+                                + ".tsv")
+    print(results_file)
 
     with open(results_file, 'w') as the_file:
         the_file.write('y_true\ty_pred\n')

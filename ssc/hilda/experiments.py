@@ -1,4 +1,4 @@
-from hilda.meta_regressors import train_random_forest_regressor, evaluate_regressor
+from meta_regressors import train_random_forest_regressor, evaluate_regressor
 
 
 def reapply_perturbations(dataset, learner, perturbations_for_training,
@@ -34,4 +34,4 @@ def reapply_perturbations(dataset, learner, perturbations_for_training,
                           str(score_on_noncorrupted_test_data), str(score_on_noncorrupted_target_data),
                           learner.name, learner.scoring, perturbations_name, str(mse), str(mae), plot_file])
     print(log_line)
-    return log_line, model
+    return log_line, model, mse, mae
