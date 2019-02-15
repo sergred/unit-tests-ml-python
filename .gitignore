@@ -116,3 +116,6 @@ dmypy.json
 .pyre/
 
 .idea/
+ssc/results/
+ssc/figures/
+*.swp

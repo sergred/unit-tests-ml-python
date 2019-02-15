@@ -124,3 +124,38 @@ def evaluate_regressor(target_data, y_target, perturbations_to_apply, model, met
             the_file.write('%s\t%s\n' % (true_score, predicted_score[0]))
 
     return mse, mae, plot_file
+
+
+def compare_against_calibration_baseline(target_data, y_target, perturbations_to_apply, model, meta_regressor, learner,
+                                         dataset_name, perturbations_name):
+
+    predicted_scores = []
+    predicted_scores_from_calibration = []
+    true_scores = []
+
+    for perturbation in perturbations_to_apply:
+        corrupted_target_data = perturbation.transform(target_data)
+
+        predictions = model.predict_proba(corrupted_target_data)
+        features = percentiles_of_probas(predictions)
+
+        score_on_corrupted_target_data = learner.score(y_target, model.predict(corrupted_target_data))
+        predicted_score_on_corrupted_target_data = meta_regressor.predict([features])
+
+        calibration_prediction = np.mean(np.amax(model.predict_proba(corrupted_target_data), axis=1))
+
+        predicted_scores.append(predicted_score_on_corrupted_target_data)
+        predicted_scores_from_calibration.append(calibration_prediction)
+        true_scores.append(score_on_corrupted_target_data)
+
+
+    from sklearn.metrics import mean_squared_error, mean_absolute_error
+
+    mse = mean_squared_error(true_scores, predicted_scores)
+    mae = mean_absolute_error(true_scores, predicted_scores)
+
+    mse_cal = mean_squared_error(true_scores, predicted_scores_from_calibration)
+    mae_cal = mean_absolute_error(true_scores, predicted_scores_from_calibration)
+
+    print("__".join([dataset_name, perturbations_name, learner.name, learner.scoring]))
+    print("MSE", mse, mse_cal, "MAE", mae, mae_cal)
